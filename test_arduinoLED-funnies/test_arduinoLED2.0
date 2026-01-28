@@ -2,9 +2,7 @@
 
 */
 // GPIO0 = 4, PWR0 = 5, DIR0 = 6
-// what the flip does this segment do? Check diagram
-// need to test the switch and blue led
-// Boston dinamics, new robot check it out
+//This time trying to make 1 led chaser, instead off all of them being on with one off
 const int GPIO[] = {4, 7, 17, 19, 9, 11, 14, 2};
 const int PWR[] = {5, 15, 18, 3, 10, 13, 45, 1};
 const int DIR[] = {6, 16, 8, 20, 46, 12, 48, 38};
@@ -29,7 +27,7 @@ void setup() {
 
     pinMode(DIR[g], OUTPUT);
 
-    digitalWrite(GPIO[g], HIGH);
+    digitalWrite(GPIO[g], LOW);
 
     digitalWrite(PWR[g], HIGH);
 
@@ -42,7 +40,7 @@ void setup() {
 
   pinMode(switchPin, INPUT_PULLUP); 
 
-  Serial.println("Running\n"); // Prints “Hello World!” followed by a new line
+  Serial.println("Running\n"); // Prints 
 
 
 }
@@ -59,34 +57,42 @@ void loop() {
   
 
   delay(333);
-  for (int g=0; g<8; g++)
-  {
-    
-    digitalWrite(GPIO[g], HIGH);
-    Serial.printf("%d On \n",g );
+  for (int g=0; g<8; g++){
+    if (g==0){
+        digitalWrite(GPIO[0], HIGH);
+        Serial.printf("%d On \n",g );
 
-    delay(400); 
-
-    digitalWrite(GPIO[g], LOW);
-    
-    Serial.printf("%d Off\n",g );
-
-    if (g==7)
-    {
-      Serial.println("Looped through all LED\n");
-      digitalWrite(42, HIGH);
-      Serial.println("Blue LED on");
-      delay(500);
-      digitalWrite(42, LOW);
-      Serial.println("Blue LED off");
     }
+    if (g < 8){
+      digitalWrite(GPIO[g], HIGH);
+      digitalWrite(GPIO[g-1], LOW);
+      Serial.printf("%d On \n",g );
+
+      delay(400); 
+
+      //digitalWrite(GPIO[g], LOW); -> might need this fyi
+    
+      Serial.printf("%d Off\n",g );
+
+      if (g==7)
+      {
+        // For this case, we using the blue led for the input button
+        Serial.println("Looped through all LED\n");
+        nums_of_loop+=1;
+        // digitalWrite(42, HIGH);
+       // Serial.println("Blue LED on");
+       // delay(500);
+       // digitalWrite(42, LOW);
+       // Serial.println("Blue LED off");
+      }
     delay(400);
+  }
 
   }
-  for (int g=0; g<9; g++){
-    digitalWrite(GPIO[g], HIGH);
-  }
-  nums_of_loop+=1;
+ // for (int g=0; g<9; g++){
+  //  digitalWrite(GPIO[g], HIGH);  this block might not be needed
+  //}
+  
 
   switch_status = digitalRead(switchPin);
   Serial.printf("%d\n", switch_status);
