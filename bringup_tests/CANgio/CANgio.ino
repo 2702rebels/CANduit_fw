@@ -28,13 +28,6 @@
 */
 
 #include "driver/twai.h"
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
-//#include "LittleFS.h"
-#include "FS.h"
-#include "SPIFFS.h"
-//#include <Adafruit_ImageReader.h> // Image-reading functions
-#include <SPIFFS_ImageReader.h>
 
 // **********************
 // Constants
@@ -85,8 +78,8 @@ static const String DeviceTypes[] =
 #define NUM_DEV_TYPES   13
 
 // Pins used to connect to CAN bus transceiver:
-#define RX_PIN 21
-#define TX_PIN 14
+#define RX_PIN 47
+#define TX_PIN 21
 
 #define NOT_PERIPH_EN   17
 
@@ -112,7 +105,6 @@ typedef struct
 // Globals
 // **********************
 
-SPIFFS_ImageReader Reader;
 
 bool DemoMode = true;
 bool DriverInstalled = false;
@@ -133,22 +125,6 @@ bool Paused = false;
 // **********************
 // Functions
 // **********************
-
-void print_wakeup_reason(){
-  esp_sleep_wakeup_cause_t wakeup_reason;
-
-  wakeup_reason = esp_sleep_get_wakeup_cause();
-
-  switch(wakeup_reason)
-  {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
-  }
-}
 
 
 // Convert device type number to human readable string
@@ -290,12 +266,9 @@ void setup() {
   //delay(1000); //Take some time to open up the Serial Monitor
   
   // Turn on power to peripherals
-  pinMode(NOT_PERIPH_EN, OUTPUT);
-  digitalWrite(NOT_PERIPH_EN, LOW);
 
   delay(1000);
 
-  print_wakeup_reason();
 
 
   // Initialize configuration structures using macro initializers

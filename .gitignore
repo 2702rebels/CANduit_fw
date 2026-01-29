@@ -39,3 +39,4 @@
 
 # debug information files
 *.dwo
+.arduino_config.lua
