@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import java.nio.ByteBuffer;
+
+import edu.wpi.first.hal.CANData;
 import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -21,9 +24,10 @@ public class Robot extends TimedRobot {
   int device_type = 10; // misc
   private final CAN m_cangio = new CAN(device_id, manu, device_type);
   */
-  //This uses the team manufacturer and device types. The device ID is 6 bits (0-63).
-  private final CAN m_cangio = new CAN(device_id);
+  //This uses the "team" manufacturer and device types by default. The device ID is 6 bits (0-63).
+  private final CAN m_canduit = new CAN(device_id);
   private static int count = 0;
+  private final CANData m_data = new CANData();
 
   public Robot() {
     // Put the PDP itself to the dashboard
@@ -31,6 +35,25 @@ public class Robot extends TimedRobot {
 
     System.out.println("Hello World!");
   }
+
+  // Sends an RTR request and returns the data
+  public byte[] requestData() {
+    int apiClass = 1; // This is device dependant - we will need to define our own set of message classes and IDs
+    int apiIndex = 2;
+    int apiId = apiClass << 6 | apiIndex;
+
+    // Write an RTR packet requesting 1 byte of data
+    m_canduit.writeRTRFrame(1, apiId);
+
+    // Read the latest packet for the API ID
+    boolean success = m_canduit.readPacketLatest(apiId, m_data);
+    
+    if (success) {
+        return m_data.data;
+    }
+    return null; // Return null if read failed
+  }
+
 
   @Override
   public void robotPeriodic() {
@@ -40,13 +63,19 @@ public class Robot extends TimedRobot {
     {
       System.out.println("Hello World!!!!");
     }
-      byte data[] = {0}; // max 8 bytes
-      int apiClass = 0; // This is device dependant - we will need to define our own set of message classes and IDs
-      int apiIndex = 0;
-      int apiId = apiClass << 6 | apiIndex;
-      m_cangio.writePacket(data, apiId);
-      //m_cangio.writePacketRepeatingNoThrow(data, apiId, 100);
-    
+
+    /* 
+    byte data[] = {0}; // max 8 bytes
+    int apiClass = 0; // This is device dependant - we will need to define our own set of message classes and IDs
+    int apiIndex = 0;
+    int apiId = apiClass << 6 | apiIndex;
+    m_cangio.writePacket(data, apiId);
+    //m_cangio.writePacketRepeatingNoThrow(data, apiId, 100);
+
+    */
+
+    requestData();
+
     
     /* 
     // Get the current going through channel 7, in Amperes.
