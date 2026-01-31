@@ -36,10 +36,12 @@ void loop() {
 
     Serial.printf("%d, ", a);
 
+#if 0
     // Turn off power briefly to break feedback loop
     digitalWrite(PWR[g], LOW);
     delay(1);
     digitalWrite(PWR[g], HIGH);
+#endif
   }
   delay(100);
 
