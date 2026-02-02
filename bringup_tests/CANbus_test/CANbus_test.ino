@@ -1,28 +1,13 @@
 /* ESP32 TWAI version of the CAN doctor.
- This code will listen for new devices and build a list of all found until a button is pressed
- to put it in test mode.  In test mode it measures how often each device sends.  This data could then be 
- plotted over time to see if there are any dips
+ This code will listen for new devices and output all found.
 
  - based on TWAIreceive example in the library
 
- - Use Tools -> Sketch Data Upload to write the files from the 'data' folder into LittleFS 
-      => NOT USED??
- 
   Connect a CAN bus transceiver to the RX/TX pins.
-    -  I used Adafruit CAN Pal (TJA1051T/3)
-    - see wiring here: https://docs.google.com/document/d/1jehJyV2GTR9OH0SWxs_VdRKCMQTFV4iYPB1Kfnj-pCg/edit?tab=t.0#heading=h.4lydqnuaozmr
 
-  Set Board to "ESP32S3 Dev module" and PSRAM to "disabled" for Cantastic board
-  Set  Board to "Adafruit ESP32 Feather" for Huzzah feather prototype
-  Install Adafruit GFX and ST7735 library
-      and Adafruit_ImageReader library  <== NO!!  Use SPIFFS_IMageReader instead:
-      https://github.com/lucadentella/SPIFFS_ImageReader
+  Set Board to "ESP32S3 Dev module" and PSRAM to disabled for this test
       
    
-  Uses 1.8" 126x160 TFT display
-
-  TWAI_MODE_LISTEN_ONLY is used so that the TWAI controller will not influence the bus.
-
   See the REV protocol docs here 
          https://drive.google.com/drive/folders/1gfLjioWWnCgHdTAkMsPzkNUPPZ9W7C-F
 */
@@ -33,7 +18,6 @@
 // Constants
 // **********************
 
-// Max Intervall to wait for bus data:
 #define POLLING_RATE_MS 100
 
 static const String Manufacturers[] =
@@ -87,7 +71,7 @@ static const String DeviceTypes[] =
 // is larger, but I think this is a generous practical limit
 #define MAX_NUM_DEVICES     32
 #define SCROLL_BAR_HEIGHT   ((160-16)*19/MAX_NUM_DEVICES)
-//#define SCROLL_BAR_STEP     (19/MAX_NUM_DEVICES)
+
 
 // **********************
 // Types
@@ -111,7 +95,6 @@ bool DriverInstalled = false;
 int NumDevices = 0;
 device_ty Devices[MAX_NUM_DEVICES];
 int MaxRx[MAX_NUM_DEVICES]; // max rx count for each device
-unsigned long buttonTime;
 uint32_t BusErrCnt = 0;
 uint32_t RxMissedCnt = 0;
 uint32_t RxOverrunCnt = 0;
@@ -427,12 +410,7 @@ void loop()
   }
   
   if (Paused) return;
-  
-  //Serial.printf("Rotary count: %d\n", RotCount);
-  //Serial.printf("Power good: %d, Charging %d, batt: %.2f V\n", digitalRead(NOT_POWER_GOOD), 
-  //              digitalRead(NOT_CHARGING), get_batt_voltage());
-    
-  // Check if alert happened
+
   uint32_t alerts_triggered;
   twai_read_alerts(&alerts_triggered, pdMS_TO_TICKS(POLLING_RATE_MS));
   twai_status_info_t twaistatus;
