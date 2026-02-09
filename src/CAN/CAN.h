@@ -1,3 +1,6 @@
+#ifndef CAN_H
+#define CAN_H
+
 #include <cstdint>
 #include <stdint.h>
 #include "driver/twai.h"
@@ -30,3 +33,5 @@ constexpr struct [[gnu::packed]] {
 } APIClass;
 
 void handle_twai_message(twai_message_t);
+
+#endif
