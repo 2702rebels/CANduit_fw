@@ -1,3 +1,6 @@
+#ifndef DEVICE_H
+#define DEVICE_H 
+
 #include "Preferences.h"
 
 extern bool disabled;
@@ -7,3 +10,5 @@ void setDisabled(bool val);
 
 void setDeviceNum(int id);
 int getDeviceNum();
+
+#endif

@@ -1,6 +1,7 @@
 #include "driver/twai.h"
 #include "src/CAN/CAN.h"
 #include "src/device/device.h"
+#include "src/api/api.h"
 
 void handle_twai_message(twai_message_t message){
     long unsigned int rxId;
@@ -19,13 +20,23 @@ void handle_twai_message(twai_message_t message){
     header.manuf = (rxId & 0xFF0000) >> 16;
     header.devType = (rxId & 0x1F000000) >> 24;
     
-    
+     
     // Implement broadcast signals later, for now just return
     
     // Todo figure out how to store device num. At the moment the program takes in all inputs
 
     if (header.devType != 10 || header.manuf != 8 || header.devNum != getDeviceNum()) return;
     
+    if (message.rtr) {
+        // add rtr stuff
+        return;
+    } else {
+        uint8_t (*data)[8] = &message.data;
 
+        if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
+            if (writeArray[header.apiClass] != nullptr) 
+                writeArray[header.apiClass](header, data);
+        }
+    }
     // Add api calls
 }
