@@ -34,6 +34,7 @@ void Port::setMode(int mode){
 
         case GPIOMode.DIG_OUT:
             readOnly = false;
+            outValue = GPIO_LOW;
             pinMode(GPIO[id],OUTPUT);
             digitalWrite(PWR[id],HIGH);
             digitalWrite(DIR[id],HIGH);
@@ -48,6 +49,7 @@ void Port::setMode(int mode){
         
         case GPIOMode.PWM_OUT:
             readOnly = false;
+            outValue = 0;
             pinMode(GPIO[id],OUTPUT);
             digitalWrite(DIR[id],HIGH);
             digitalWrite(PWR[id],HIGH);
