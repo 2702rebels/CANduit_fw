@@ -53,28 +53,25 @@ void handle_twai_message(twai_message_t message){
 
 
 
-/** @brief given a binary range, gets a select int from a CAN message data object, in little endian.
- * @param startBit inclusive starting bit
- * @param length the length of the binary integer returned
+/** @brief given a little endian array, gets a uint32_t from a range of bytes, indexed at 0
+ * @param startByte inclusive starting byte
+ * @param endByte inclusive ending byte
  */
 
-int get_bits_from_message(uint8_t (*data)[8], int startBit, int length){
+uint32_t get_bytes_from_message(uint8_t (*data)[8], int startByte, int endByte){
+    if (startByte < 0 || endByte > 8 || endByte-startByte >= 4){
+        Serial.print("Attempted to retrieve non-existant bytes from message");
+        return 0;
+    }
 
-    if (startBit + length >= 64) { // If doesn't fit in bits
-        Serial.print("Attempted to get more bits from message than exist");
-        return 0;
-    }  else if (length >= 32) {
-        Serial.print("Attempted to get greater than a 32 bit integer");
-        return 0;
+    uint32_t result = 0;
+    for (int i = startByte; i<=endByte;i++){
+        result << 8;
+        result += (*data)[i];
     }
     
 
-    
-
-
-    
-
-    return 0;
+    return result;
 }
 
 
