@@ -23,18 +23,24 @@ void handle_twai_message(twai_message_t message){
      
     // Implement broadcast signals later, for now just return
     
-    // Todo figure out how to store device num. At the moment the program takes in all inputs
 
     if (header.devType != 10 || header.manuf != 8 || header.devNum != getDeviceNum()) return;
     
+    // Handle RTR frames
     if (message.rtr) {
-        // add rtr stuff
-        return;
-    } else {
+        if (0<header.apiClass && header.apiClass <= std::size(readArray)){
+            if (readArray[header.apiClass] != nullptr) 
+
+                readArray[header.apiClass](header);
+        }
+    } 
+    // Handle data frames
+    else {
         uint8_t (*data)[8] = &message.data;
 
         if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
             if (writeArray[header.apiClass] != nullptr) 
+
                 writeArray[header.apiClass](header, data);
         }
     }
