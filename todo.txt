@@ -1,0 +1,4 @@
+Implement little endian
+-> leftmost byte is least significant
+regular numbers are big endian so will need to flip to format in little endian.
+Recieved numers will be little endian so don't flip for that.

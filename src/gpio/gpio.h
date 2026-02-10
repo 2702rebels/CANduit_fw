@@ -24,9 +24,9 @@ class Port {
 public:
     Port();
     int id; // What GPIO it represents, 0,1,2,3 ... etc.
-    int mode; // The current mode as represented by the GPIOMode struct
-    int outValue;
-    int readOnly;
+    uint8_t mode; // The current mode as represented by the GPIOMode struct
+    uint16_t outValue;
+    bool readOnly;
 
     void reset();
     void setPWMIn(); // todo bundle this under setmode
@@ -35,7 +35,6 @@ public:
 
 
 typedef void (*isr_callback)(); 
-
 extern Port ports[portsCount];
 extern isr_callback IsrArray[8]; 
 
@@ -44,5 +43,10 @@ void setupGPIO();
 Port* getGPIO(int id);
 void resetAllPorts();
 bool inPorts(int id);
+
+extern volatile uint32_t period[8];
+extern volatile uint32_t highTime[8];
+extern volatile uint32_t lowTime[8];
+
 
 #endif

@@ -1,5 +1,6 @@
 #include "src/CAN/CAN.h"
 #include "src/api/api.h"
+#include "src/gpio/gpio.h"
 
 void disable();
 
@@ -13,5 +14,6 @@ void BROADCAST_ALL(CANHeader header, uint8_t (*data)[8]){
 
 
 void disable(){
-    // Implement disable
+    resetAllPorts();
+    // Turn mainloop into an LED blinking pattern
 }
