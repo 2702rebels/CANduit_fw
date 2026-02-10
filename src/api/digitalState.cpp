@@ -28,6 +28,10 @@ int DIGITAL_STATE_R(CANHeader header){
     
     Port *port = getGPIO(header.apiIndex);
     
-    return port->outValue;
+    if (port->readOnly){
+        return digitalRead(GPIO[port->id]);
+    } else {
+        return port->outValue;
+    }
 }
 
