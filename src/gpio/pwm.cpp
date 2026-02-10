@@ -1,4 +1,3 @@
-#include "src/CAN/CAN.h"
 #include "src/gpio/gpio.h"
 #include "esp_attr.h"
 

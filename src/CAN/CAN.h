@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <stdint.h>
 #include "driver/twai.h"
+#include "bitset"
 
 // Pins used to connect to CAN bus transceiver:
 #define RX_PIN 47
@@ -13,7 +14,6 @@
 #define BROADCAST 0;
 #define MANUFACTURER 8;
 #define DEVICE_TYPE 10;
-
 
 struct [[gnu::packed]] CANHeader {
     uint32_t devNum:5;
