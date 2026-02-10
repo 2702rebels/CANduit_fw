@@ -2,6 +2,8 @@
 #include "src/CAN/CAN.h"
 #include "src/device/device.h"
 #include "src/api/api.h"
+#include "bitset"
+
 
 void handle_twai_message(twai_message_t message){
     long unsigned int rxId;
@@ -22,7 +24,9 @@ void handle_twai_message(twai_message_t message){
     
      
     // check for broadcast signals
-    if (header.devType == 0 && header.manuf == 0) writeArray[0](header, &message.data);
+    uint8_t (*data)[8] = &message.data;
+
+    if (header.devType == 0 && header.manuf == 0) writeArray[0](header, data);
 
     // filter non-addressed messages
     if (header.devType != 10 || header.manuf != 8 || header.devNum != getDeviceNum()) return;
@@ -37,8 +41,6 @@ void handle_twai_message(twai_message_t message){
     } 
     // Handle data frames
     else {
-        uint8_t (*data)[8] = &message.data;
-
         if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
             if (writeArray[header.apiClass] != nullptr) 
 
@@ -47,3 +49,32 @@ void handle_twai_message(twai_message_t message){
     }
     // Add api calls
 }
+
+
+
+
+/** @brief given a binary range, gets a select int from a CAN message data object, in little endian.
+ * @param startBit inclusive starting bit
+ * @param length the length of the binary integer returned
+ */
+
+int get_bits_from_message(uint8_t (*data)[8], int startBit, int length){
+
+    if (startBit + length >= 64) { // If doesn't fit in bits
+        Serial.print("Attempted to get more bits from message than exist");
+        return 0;
+    }  else if (length >= 32) {
+        Serial.print("Attempted to get greater than a 32 bit integer");
+        return 0;
+    }
+    
+
+    
+
+
+    
+
+    return 0;
+}
+
+

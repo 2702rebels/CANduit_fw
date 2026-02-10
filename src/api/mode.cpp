@@ -10,8 +10,6 @@ void MODE_W(CANHeader header, uint8_t (*data)[8]){
     
     Port *port = getGPIO(header.apiIndex);
    
-    if (port->readOnly) return;
-
     port->setMode((*data)[0]);
 }
 

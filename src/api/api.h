@@ -17,26 +17,28 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]);
 // Define read operations
 int MODE_R(CANHeader header);
 int DIGITAL_STATE_R(CANHeader header);
-
-
+int PERIOD_R(CANHeader header); 
+int HIGHTIME_R(CANHeader header);
+int LOWTIME_R(CANHeader header);
 
 // Declare write and read arrays. Make sure to put items in order as they are in CAN.h APIClass struct
+// Add nullptr for unimplemented functions or just empty slots
 const writeOperation writeArray[6] = {
     BROADCAST_ALL, 
     MODE_W, 
     DIGITAL_STATE_W, 
-    nullptr, 
-    nullptr, 
-    nullptr
+    nullptr, // Period has no write 
+    nullptr, // Hightime has no write
+    nullptr  // lowtime has no write
 };
 
 const readOperation readArray[6] = {
-    nullptr, 
+    nullptr, // Broadcastr has no read operation
     MODE_R, 
     DIGITAL_STATE_R, 
-    nullptr, 
-    nullptr, 
-    nullptr
+    PERIOD_R, 
+    HIGHTIME_R, 
+    LOWTIME_R
 };
 
 
