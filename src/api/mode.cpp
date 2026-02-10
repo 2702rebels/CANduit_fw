@@ -15,7 +15,7 @@ void MODE_W(CANHeader header, uint8_t (*data)[8]){
 
 
 // Read modes
-int MODE_R(CANHeader header){
+uint MODE_R(CANHeader header){
     
     if (!inPorts(header.apiIndex)) return 0;
     

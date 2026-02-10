@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <stdint.h>
 #include "driver/twai.h"
-#include "bitset"
 
 // Pins used to connect to CAN bus transceiver:
 #define RX_PIN 47
@@ -33,5 +32,6 @@ constexpr struct [[gnu::packed]] {
 } APIClass;
 
 void handle_twai_message(twai_message_t);
+uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte);
 
 #endif
