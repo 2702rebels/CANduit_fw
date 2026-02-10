@@ -77,7 +77,7 @@ void loop() {
     // One or more messages received. Handle all.
     twai_message_t message;
     while (twai_receive(&message, 0) == ESP_OK) {
-      handle_twai_message(message); 
+      handle_twai_message(message); // Leads to src/CAN/CAN.h 
     }
   }
 
