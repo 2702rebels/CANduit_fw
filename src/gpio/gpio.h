@@ -25,11 +25,10 @@ public:
     Port();
     int id; // What GPIO it represents, 0,1,2,3 ... etc.
     uint8_t mode; // The current mode as represented by the GPIOMode struct
-    uint16_t outValue;
+    uint32_t outValue; // Could be up to 24 bit
     bool readOnly;
 
     void reset();
-    void setPWMIn(); // todo bundle this under setmode
     void setMode(int id);
 };
 
