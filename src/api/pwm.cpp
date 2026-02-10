@@ -1,3 +1,4 @@
+#include "stdint.h"
 #include "src/gpio/gpio.h"
 #include "src/CAN/CAN.h"
 #include "src/api/api.h"
@@ -5,7 +6,7 @@
 // Period only has read mode
 // period, hightime, and lowtime are defined in gpio.h
 
-uint PERIOD_R(CANHeader header){
+uint32_t PERIOD_R(CANHeader header){
     
     if (!inPorts(header.apiIndex)) return 0;
     
@@ -17,7 +18,7 @@ uint PERIOD_R(CANHeader header){
 
 
 
-uint HIGHTIME_R(CANHeader header){
+uint32_t HIGHTIME_R(CANHeader header){
     
     if (!inPorts(header.apiIndex)) return 0;
     
@@ -29,7 +30,7 @@ uint HIGHTIME_R(CANHeader header){
 
 
 
-uint LOWTIME_R(CANHeader header){
+uint32_t LOWTIME_R(CANHeader header){
     
     if (!inPorts(header.apiIndex)) return 0;
     

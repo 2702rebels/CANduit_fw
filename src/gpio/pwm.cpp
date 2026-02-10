@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#include "stdint.h"
 #include "src/gpio/gpio.h"
 #include "esp_attr.h"
 

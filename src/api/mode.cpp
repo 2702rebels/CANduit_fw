@@ -1,3 +1,4 @@
+#include "stdint.h"
 #include "src/gpio/gpio.h"
 #include "src/CAN/CAN.h"
 #include "src/api/api.h"
@@ -15,7 +16,7 @@ void MODE_W(CANHeader header, uint8_t (*data)[8]){
 
 
 // Read modes
-uint MODE_R(CANHeader header){
+uint32_t MODE_R(CANHeader header){
     
     if (!inPorts(header.apiIndex)) return 0;
     
