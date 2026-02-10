@@ -2,7 +2,6 @@
 #include "src/CAN/CAN.h"
 #include "src/device/device.h"
 #include "src/api/api.h"
-#include "bitset"
 
 
 void handle_twai_message(twai_message_t message){
@@ -24,9 +23,7 @@ void handle_twai_message(twai_message_t message){
     
      
     // check for broadcast signals
-    uint8_t (*data)[8] = &message.data;
-
-    if (header.devType == 0 && header.manuf == 0) writeArray[0](header, data);
+    if (header.devType == 0 && header.manuf == 0) writeArray[0](header, &message.data);
 
     // filter non-addressed messages
     if (header.devType != 10 || header.manuf != 8 || header.devNum != getDeviceNum()) return;
@@ -44,7 +41,7 @@ void handle_twai_message(twai_message_t message){
         if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
             if (writeArray[header.apiClass] != nullptr) 
 
-                writeArray[header.apiClass](header, data);
+                writeArray[header.apiClass](header, &message.data);
         }
     }
 }
