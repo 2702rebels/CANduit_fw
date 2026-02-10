@@ -10,13 +10,15 @@ const int portsCount = 8;
 const int GPIO_LOW = 0;
 const int GPIO_HIGH = 1;
 
-constexpr struct [[gnu::packed]] {
+constexpr struct { 
     const int UNASSIGNED = 0;
     const int DIG_IN = 1;
     const int DIG_OUT = 2;
     const int PWM_OUT = 3;
     const int PWM_IN = 4;
 } GPIOMode;
+
+const int modesCount = 5;
 
 class Port {
 public:

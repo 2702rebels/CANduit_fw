@@ -1,4 +1,5 @@
 #include "src/CAN/CAN.h"
+#include "src/gpio/gpio.h"
 #include "src/device/device.h"
 #include "driver/twai.h"
 
@@ -9,6 +10,8 @@ void setup() {
 
     Serial.begin(115200); // Sets the baud rate at 9600 to match the software setting
     delay(1000);
+
+    setupGPIO();
 
     // setup TWAI
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)TX_PIN, (gpio_num_t)RX_PIN, TWAI_MODE_LISTEN_ONLY);
