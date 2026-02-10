@@ -21,9 +21,10 @@ void handle_twai_message(twai_message_t message){
     header.devType = (rxId & 0x1F000000) >> 24;
     
      
-    // Implement broadcast signals later, for now just return
-    
+    // check for broadcast signals
+    if (header.devType == 0 && header.manuf == 0) writeArray[0](header, &message.data);
 
+    // filter non-addressed messages
     if (header.devType != 10 || header.manuf != 8 || header.devNum != getDeviceNum()) return;
     
     // Handle RTR frames
