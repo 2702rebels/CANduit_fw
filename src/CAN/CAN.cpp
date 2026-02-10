@@ -36,8 +36,8 @@ void handle_twai_message(twai_message_t message){
         if (0<header.apiClass && header.apiClass <= std::size(readArray)){
             if (readArray[header.apiClass] != nullptr) 
 
-                readArray[header.apiClass](header);
-        }
+                uint response = readArray[header.apiClass](header);
+        } // Implement response
     } 
     // Handle data frames
     else {
@@ -47,7 +47,6 @@ void handle_twai_message(twai_message_t message){
                 writeArray[header.apiClass](header, data);
         }
     }
-    // Add api calls
 }
 
 
@@ -58,20 +57,21 @@ void handle_twai_message(twai_message_t message){
  * @param endByte inclusive ending byte
  */
 
-uint32_t get_bytes_from_message(uint8_t (*data)[8], int startByte, int endByte){
+uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
     if (startByte < 0 || endByte > 8 || endByte-startByte >= 4){
         Serial.print("Attempted to retrieve non-existant bytes from message");
         return 0;
     }
 
     uint32_t result = 0;
-    for (int i = startByte; i<=endByte;i++){
-        result << 8;
-        result += (*data)[i];
+    for (int i = endByte; i>=startByte;i--){ 
+        result <<= 8; 
+        result += (*data)[i]; 
     }
     
 
     return result;
 }
+
 
 

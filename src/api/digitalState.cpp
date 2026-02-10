@@ -22,7 +22,7 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
 
 
 // Read modes
-int DIGITAL_STATE_R(CANHeader header){
+uint DIGITAL_STATE_R(CANHeader header){
     
     if (!inPorts(header.apiIndex)) return 0;
     

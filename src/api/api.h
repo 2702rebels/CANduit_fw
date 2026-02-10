@@ -4,7 +4,7 @@
 #include "src/CAN/CAN.h"
 
 typedef void (*writeOperation)(CANHeader header, uint8_t (*data)[8]); 
-typedef int (*readOperation)(CANHeader header); 
+typedef uint (*readOperation)(CANHeader header); 
 
 // Broadcast operation
 void BROADCAST_ALL(CANHeader header, uint8_t (*data)[8]);
@@ -15,11 +15,11 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]);
 
 
 // Define read operations
-int MODE_R(CANHeader header);
-int DIGITAL_STATE_R(CANHeader header);
-int PERIOD_R(CANHeader header); 
-int HIGHTIME_R(CANHeader header);
-int LOWTIME_R(CANHeader header);
+uint MODE_R(CANHeader header);
+uint DIGITAL_STATE_R(CANHeader header);
+uint PERIOD_R(CANHeader header); 
+uint HIGHTIME_R(CANHeader header);
+uint LOWTIME_R(CANHeader header);
 
 // Declare write and read arrays. Make sure to put items in order as they are in CAN.h APIClass struct
 // Add nullptr for unimplemented functions or just empty slots
