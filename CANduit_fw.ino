@@ -45,8 +45,9 @@ void setup() {
     // TWAI driver is now successfully installed and started
     Serial.println("CAN is good to go");
     preferences.begin("CANduit",false);
+    deviceID = getDeviceID();
 
-
+    preferences.end();
 }
 
 

@@ -26,7 +26,7 @@ void handle_twai_message(twai_message_t message){
     if (header.devType == 0 && header.manuf == 0) writeArray[0](header, &message.data);
 
     // filter non-addressed messages
-    if (header.devType != 10 || header.manuf != 8 || header.devNum != getDeviceNum()) return;
+    if (header.devType != 10 || header.manuf != 8 || header.devNum != deviceID) return;
     
     // Handle RTR frames
     if (message.rtr) {
