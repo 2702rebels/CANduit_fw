@@ -1,4 +1,5 @@
 #include "src/CAN/CAN.h"
+#include "Arduino.h"
 #include "stdint.h"
 #include "driver/twai.h"
 #include <array>

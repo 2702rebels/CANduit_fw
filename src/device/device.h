@@ -11,9 +11,9 @@ extern Preferences preferences;
 
 void setDisabled(bool val);
 
-void setDeviceNum(int id);
-int getDeviceNum();
-
+void setDeviceID(int id);
+int getDeviceID();
+int deviceID;
 
 
 #endif
