@@ -12,7 +12,7 @@
  */
 
 uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
-    if (startByte < 0 || endByte > 8 || endByte-startByte >= 4){
+    if (startByte < 0 || endByte >= 8 || endByte-startByte >= 4){
         Serial.print("Attempted to retrieve non-existant bytes from message");
         return 0;
     }

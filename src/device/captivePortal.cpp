@@ -4,7 +4,7 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include "WiFi.h"
-#include "thread"
+#include "freertos/task.h"
 #include "device.h"
 
 // ================== WIFI CONFIG ==================
@@ -219,14 +219,16 @@ void captivePortalSetup() {
   server.begin();
     
 
-    std::thread loop(captivePortalLoop);
+    TaskHandle_t portal_task;
+    xTaskCreate(captivePortalLoop, "PWMTask",500,NULL,0, &portal_task);
+
     Serial.println("Launched Captive portal event thread");
     // We never need to close the thread as we want it to stay open as long as the canduit runs
 }
 
 // ================== LOOP ==================
 
-void captivePortalLoop() {
+void captivePortalLoop(void *pvParameters) {
   dnsServer.processNextRequest();
   server.handleClient();
 }
