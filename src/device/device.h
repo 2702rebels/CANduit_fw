@@ -15,5 +15,8 @@ void setDeviceID(int id);
 int getDeviceID();
 int deviceID;
 
+void captivePortalLoop();
+void captivePortalSetup();
+
 
 #endif
