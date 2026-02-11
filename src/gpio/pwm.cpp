@@ -1,123 +1,105 @@
 #include <Arduino.h>
 #include "stdint.h"
 #include "src/gpio/gpio.h"
-#include "esp_attr.h"
-
-volatile uint32_t oldRiseTime[8];
-volatile uint32_t riseTime[8]; 
-volatile uint32_t fallTime[8]; 
-volatile bool newPulse[8];
+#include "driver/rmt_rx.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 
 volatile uint32_t period[8];
 volatile uint32_t highTime[8];
 volatile uint32_t lowTime[8];
 
-// IRAM_ATTR ensures the interrupt runs from RAM, not Flash
-void IRAM_ATTR ISR0() {
+#define RX_PIN            GPIO_NUM_2
+#define RMT_RESOLUTION_HZ 10000000 // 80MHz for high precision (12.5ns per tick)
+#define IDLE_THRES_NS     2000000  // 2ms idle threshold (fits @ 10MHz)
+#define BUFFER_SIZE 48
+
+void PWMTask(void *pvParameters);
+
+// 1. GLOBAL & ALIGNED: Use static to ensure the memory address never moves
+//static rmt_symbol_word_t syms[48]; 
+//static rmt_receive_config_t rx_cfg;
+// 1. Force 4-byte alignment for the buffer and config
+// 'static' keeps them in a fixed location; 'aligned(4)' prevents the LoadProhibited crash
+static DMA_ATTR rmt_symbol_word_t syms[BUFFER_SIZE] __attribute__((aligned(4))); 
+static rmt_receive_config_t rx_cfg __attribute__((aligned(4)));
+
+rmt_channel_handle_t rx_chan = NULL;
+SemaphoreHandle_t rx_done_sem = NULL;
+//size_t last_captured_count = 0;  // REname pulse_count - PHIL
+volatile size_t captured_symbols = 0;
+
+
+void PWMSetup() {
     
-  // Read the pin state inside the ISR to determine if it was a RISE or FALL
-  if (digitalRead(GPIO[0]) == HIGH) { // Rising edge
-    oldRiseTime[0] = riseTime[0];
-    riseTime[0] = micros();
-    period[0] = riseTime[0] - oldRiseTime[0];
-    lowTime[0] = riseTime[0] - fallTime[0];
-  }
-  else {
-    fallTime[0]=micros();
-    newPulse[0]=true;
-    highTime[0] = fallTime[0] - riseTime[0];
-  }
+
+
+    // Start Receive with Partial RX Enabled
+    memset(&rx_cfg, 0, sizeof(rx_cfg)); // Zero out the struct
+    //rx_cfg.signal_range_min_ns = 900;
+    rx_cfg.signal_range_max_ns = 2000000;
+    rx_cfg.signal_range_min_ns = 0; // is this necessary?
+    //rx_cfg.signal_range_max_ns = 0;
+    rx_cfg.flags.en_partial_rx = true;
+
+    TaskHandle_t pwm_task;
+    xTaskCreate(PWMTask, "PWMTask",250,NULL,0, &pwm_task);
 }
 
-void IRAM_ATTR ISR1() {
-  if (digitalRead(GPIO[1]) == HIGH) {
-    oldRiseTime[1] = riseTime[1];
-    riseTime[1] = micros();
-    period[1] = riseTime[1] - oldRiseTime[1];
-    lowTime[1] = riseTime[1] - fallTime[1];
-  } else {
-    fallTime[1] = micros();
-    newPulse[1] = true;
-    highTime[1] = fallTime[1] - riseTime[1];
-  }
-}
 
-void IRAM_ATTR ISR2() {
-  if (digitalRead(GPIO[2]) == HIGH) {
-    oldRiseTime[2] = riseTime[2];
-    riseTime[2] = micros();
-    period[2] = riseTime[2] - oldRiseTime[2];
-    lowTime[2] = riseTime[2] - fallTime[2];
-  } else {
-    fallTime[2] = micros();
-    newPulse[2] = true;
-    highTime[2] = fallTime[2] - riseTime[2];
-  }
-}
+void PWMTask(void *pvParameters) {
+    // Start one-shot capture
 
-void IRAM_ATTR ISR3() {
-  if (digitalRead(GPIO[3]) == HIGH) {
-    oldRiseTime[3] = riseTime[3];
-    riseTime[3] = micros();
-    period[3] = riseTime[3] - oldRiseTime[3];
-    lowTime[3] = riseTime[3] - fallTime[3];
-  } else {
-    fallTime[3] = micros();
-    newPulse[3] = true;
-    highTime[3] = fallTime[3] - riseTime[3];
-  }
-}
+    for (int portId = 0; portId<7;portId++){
+        Port* port = getGPIO(portId);
 
-void IRAM_ATTR ISR4() {
-  if (digitalRead(GPIO[4]) == HIGH) {
-    oldRiseTime[4] = riseTime[4];
-    riseTime[4] = micros();
-    period[4] = riseTime[4] - oldRiseTime[4];
-    lowTime[4] = riseTime[4] - fallTime[4];
-  } else {
-    fallTime[4] = micros();
-    newPulse[4] = true;
-    highTime[4] = fallTime[4] - riseTime[4];
-  }
-}
+        if (port->mode != GPIOMode.PWM_IN) continue;
+        rmt_rx_channel_config_t rx_chan_config = {
+            .gpio_num = (gpio_num_t)GPIO[port->id],
+            .clk_src = RMT_CLK_SRC_DEFAULT,
+            .resolution_hz = RMT_RESOLUTION_HZ,
+            .mem_block_symbols = 48,
+        };
+        ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_chan_config, &rx_chan));
+        ESP_ERROR_CHECK(rmt_enable(rx_chan));
+        
 
-void IRAM_ATTR ISR5() {
-  if (digitalRead(GPIO[5]) == HIGH) {
-    oldRiseTime[5] = riseTime[5];
-    riseTime[5] = micros();
-    period[5] = riseTime[5] - oldRiseTime[5];
-    lowTime[5] = riseTime[5] - fallTime[5];
-  } else {
-    fallTime[5] = micros();
-    newPulse[5] = true;
-    highTime[5] = fallTime[5] - riseTime[5];
-  }
-}
+        esp_err_t ret = rmt_receive(rx_chan, syms, BUFFER_SIZE, &rx_cfg); // pass num symbols
+        if (ret == ESP_OK) {
+            delay(100); //PHIL - use a shorter delay?
+                
+            // Stop the hardware immediately
+            rmt_disable(rx_chan);
+            rmt_del_channel(rx_chan);
 
-void IRAM_ATTR ISR6() {
-  if (digitalRead(GPIO[6]) == HIGH) {
-    oldRiseTime[6] = riseTime[6];
-    riseTime[6] = micros();
-    period[6] = riseTime[6] - oldRiseTime[6];
-    lowTime[6] = riseTime[6] - fallTime[6];
-  } else {
-    fallTime[6] = micros();
-    newPulse[6] = true;
-    highTime[6] = fallTime[6] - riseTime[6];
-  }
-}
+            // The driver will NOT trigger the callback when disabled.
+            // You must manually check the memory now.
+            // Note: Without the callback, you don't know exactly how many 'captured_symbols'.
+            // You will have to scan the buffer for the 'end' marker 
+            for (int i = 0; i < BUFFER_SIZE; i++) {
+                if (syms[i].duration0 == 0 && syms[i].duration1 == 0) {
+                    break; // Found the end of captured data
+                }
 
-void IRAM_ATTR ISR7() {
-  if (digitalRead(GPIO[7]) == HIGH) {
-    oldRiseTime[7] = riseTime[7];
-    riseTime[7] = micros();
-    period[7] = riseTime[7] - oldRiseTime[7];
-    lowTime[7] = riseTime[7] - fallTime[7];
-  } else {
-    fallTime[7] = micros();
-    newPulse[7] = true;
-    highTime[7] = fallTime[7] - riseTime[7];
-  }
+                // Process your data here
+                uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
+                float width_us = (float)ticks / 10.0;
+                Serial.printf("Manual Read Sym: %.2f us\n", width_us);
+                
+                // If fallTime;
+                if (syms[0].level0 == 1) {
+                    highTime[port->id] = syms[0].duration0;
+                    lowTime[port->id] = syms[0].duration1;
+                } else {
+                    highTime[port->id] = syms[0].duration1;
+                    lowTime[port->id] = syms[0].duration0;
+                }
+                period[port->id] = syms[0].duration0 + syms[0].duration1;
+            } 
+            
+        } else {
+            Serial.printf("rmt_receive error: %s\n", esp_err_to_name(ret));
+        }
+    }
+    delay(100); 
 }
-// Create the array of function pointers
-isr_callback IsrArray[] = { ISR0, ISR1, ISR2, ISR3, ISR4, ISR5, ISR6, ISR7 };
