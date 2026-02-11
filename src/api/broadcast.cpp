@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #include "src/CAN/CAN.h"
 #include "src/api/api.h"
 #include "src/gpio/gpio.h"

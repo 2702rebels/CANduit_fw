@@ -20,6 +20,4 @@ int getDeviceID(){
     return deviceNum;
 }
 
-void setDisabled(bool val){
-    disabled = val;
-}
+int deviceID = getDeviceID();

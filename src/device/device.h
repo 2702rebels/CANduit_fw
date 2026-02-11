@@ -6,14 +6,13 @@
 
 #include "Preferences.h"
 
-extern bool disabled;
 extern Preferences preferences;
 
 void setDisabled(bool val);
 
 void setDeviceID(int id);
 int getDeviceID();
-int deviceID;
+extern int deviceID;
 
 void captivePortalLoop();
 void captivePortalSetup();
