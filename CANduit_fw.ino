@@ -7,7 +7,7 @@ bool disabled = false;
 
 void setup() {
 
-    Serial.begin(115200); // Sets the baud rate at 9600 to match the software setting
+    Serial.begin(115200);
     delay(1000);
 
     setupGPIO();
@@ -44,7 +44,7 @@ void setup() {
 
     // TWAI driver is now successfully installed and started
     Serial.println("CAN is good to go");
-    preferences.begin("CANduit",false);
+    preferences.begin("canduit",false);
     deviceID = getDeviceID();
     preferences.end();
     #if WIFI

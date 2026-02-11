@@ -12,7 +12,7 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
     
     Port *port = getGPIO(header.apiIndex);
     
-    if (port->readOnly) return;
+    if (port->mode != GPIOMode.DIG_OUT) return;
 
     int setting = (*data)[0];
     if (setting != 0 && setting != 1) return;
