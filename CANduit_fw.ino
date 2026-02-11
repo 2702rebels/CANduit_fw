@@ -10,6 +10,7 @@ void setup() {
     delay(1000);
 
     setupGPIO();
+    PWMSetup();
 
     // setup TWAI
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)TX_PIN, (gpio_num_t)RX_PIN, TWAI_MODE_LISTEN_ONLY);
@@ -41,8 +42,13 @@ void setup() {
       return;
     }
 
+
+
     // TWAI driver is now successfully installed and started
     Serial.println("CAN is good to go");
+    
+    
+
     preferences.begin("canduit",false);
     deviceID = getDeviceID();
     preferences.end();

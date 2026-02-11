@@ -33,15 +33,14 @@ public:
 };
 
 
-typedef void (*isr_callback)(); 
 extern Port ports[portsCount];
-extern isr_callback IsrArray[8]; 
 
 // general gpio
 void setupGPIO();
 Port* getGPIO(int id);
 void resetAllPorts();
 bool inPorts(int id);
+void PWMSetup();
 
 extern volatile uint32_t period[8];
 extern volatile uint32_t highTime[8];
