@@ -16,7 +16,6 @@ void setupGPIO(){
         ports[g] = newPort; 
         pinMode(GPIO[g],OUTPUT);
         digitalWrite(GPIO[g],LOW);
-        attachInterrupt(GPIO[g],IsrArray[g],CHANGE);
 
         pinMode(PWR[g],OUTPUT);
         pinMode(DIR[g],OUTPUT);
