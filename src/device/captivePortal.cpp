@@ -35,18 +35,18 @@ String buildHTMLPage() {
   <style>
   /* This CSS block defines styles for all buttons on the page */
   button {
-    padding: 50px 76px; /* Adjust padding to change the button size */
-    font-size: 45px;    /* Adjust font size for readability */
-    margin: 11px;        /* Add some space between buttons */
-    border-radius: 2.5px; /* Optional: adds rounded corners */
-    cursor: pointer;    /* Optional: changes cursor to pointer on hover */
+    padding: 50px 76px;
+    font-size: 45px;
+    margin: 11px;
+    border-radius: 2.5px;
+    cursor: pointer;
   }
   input {
-    padding: 50px 76px; /* Adjust padding to change the button size */
-    font-size: 45px;    /* Adjust font size for readability */
-    margin: 11px;        /* Add some space between buttons */
-    border-radius: 2.5px; /* Optional: adds rounded corners */
-    cursor: pointer;    /* Optional: changes cursor to pointer on hover */
+    padding: 50px 76px;
+    font-size: 45px;
+    margin: 11px;        
+    border-radius: 2.5px; 
+    cursor: pointer;
   }
 </style>
 </head>
@@ -73,10 +73,6 @@ String buildHTMLPage() {
   page += R"HTML(
   <form action="/serial">
     <button type="submit">Print to Serial</button>
-  </form>
-
-  <form action="/original">
-    <button type="submit">Original Button</button>
   </form>
 
   <form action="/type-input" method="GET">
@@ -118,20 +114,6 @@ void handleSerialOnly() {
   server.send(200, "text/html", buildHTMLPage());
 }
 
-
-void handleOriginal() {
-  Serial.println("[BUTTON] Original button pressed");
-
-  // button 3 ALSO prints device ID
-  if (deviceID >= 0) {
-    Serial.print("[DEVICE ID] Current ID: ");
-    Serial.println(deviceID);
-  } else {
-    Serial.println("[DEVICE ID] Not set");
-  }
-
-  server.send(200, "text/html", buildHTMLPage());
-}
 
 // ================== DEVICE ID HANDLER ==================
 
@@ -175,7 +157,6 @@ void handleUserIDInput() {
 // ================== SETUP ==================
 
 void captivePortalSetup() {
-  Serial.println();
   Serial.println("===== Captive Portal Boot =====");
 
   // ---- LOAD STORED DEVICE ID ----
@@ -232,7 +213,6 @@ void captivePortalSetup() {
   // ---- ROUTES ----
   server.on("/", handleRoot);
   server.on("/serial", handleSerialOnly);
-  server.on("/original", handleOriginal);
   server.on("/type-input", handleUserIDInput);
   server.onNotFound(handleRoot);
 
