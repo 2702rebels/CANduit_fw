@@ -20,27 +20,9 @@ static rmt_receive_config_t rx_cfg __attribute__((aligned(4)));
 
 rmt_channel_handle_t rx_chan = NULL;
 SemaphoreHandle_t rx_done_sem = NULL;
-size_t last_captured_count = 0;  // REname pulse_count - PHIL
+//size_t last_captured_count = 0;  // REname pulse_count - PHIL
 volatile size_t captured_symbols = 0;
-//static rmt_symbol_word_t rx_symbols[RX_BUFFER_SIZE];
 
-#if 0
-int callback_count = 0;
-
-// This is the "ISR-lite" callback the driver calls when hardware stops
-static bool IRAM_ATTR rmt_rx_done_callback(rmt_channel_handle_t channel, const rmt_rx_done_event_data_t *edata, void *user_data) {
-    captured_symbols = edata->num_symbols;
-    callback_count++;
-    //if (captured_symbols > 2) {
-      BaseType_t high_task_wakeup = pdFALSE; 
-      xSemaphoreGiveFromISR(rx_done_sem, &high_task_wakeup);
-      //returning true instructs the CPU to perform a context switch immediately after the ISR finishes, ensuring the unblocked task runs without waiting for the next scheduler tick
-      return high_task_wakeup == pdTRUE;
-      //return(true);
-    //}
-    //return(false);
-}
-#endif
 
 void setup() {
   Serial.begin(115200);
@@ -54,8 +36,6 @@ void setup() {
     digitalWrite(DIR[g], LOW); 
   }
 
-  //rx_done_sem = xSemaphoreCreateBinary();
-
   rmt_rx_channel_config_t rx_chan_config = {
     .gpio_num = RX_PIN,
     .clk_src = RMT_CLK_SRC_DEFAULT,
@@ -63,12 +43,6 @@ void setup() {
     .mem_block_symbols = 48,
   };
   ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_chan_config, &rx_chan));
-
-#if 0
-  // Register the callback so we know when the hardware is done
-  rmt_rx_event_callbacks_t cbs = { .on_recv_done = rmt_rx_done_callback };
-  ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(rx_chan, &cbs, NULL));
-#endif
   ESP_ERROR_CHECK(rmt_enable(rx_chan));
 
 
@@ -82,73 +56,41 @@ void setup() {
 }
 
 
-
 void loop() {
-    // Reset captured count before starting
-    //captured_symbols = 0;
-
     // Start one-shot capture
-    //esp_err_t ret = rmt_receive(rx_chan, syms, sizeof(syms), &rx_cfg);
     esp_err_t ret = rmt_receive(rx_chan, syms, BUFFER_SIZE, &rx_cfg); // pass num symbols
     if (ret == ESP_OK) {
         delay(100); //PHIL - use a shorter delay?
-#if 0
-        // Wait for hardware to stop (Idle threshold or Buffer full)
-        //  -
-        if (xSemaphoreTake(rx_done_sem, pdMS_TO_TICKS(100)) == pdTRUE) {
-#if 0
-            if (captured_symbols > 0) {
-                // syms[0].level tells us if the first captured part was High (1) or Low (0)
-                uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
-                float width_us = (float)ticks / 10.0;
-                Serial.printf("Pulse Width: %.2f us (Duty: %.3f%%)\n", width_us, (width_us / 1000.0) * 100.0);
-
-                for (int i=0; i<captured_symbols; i++)
-                {
-                  Serial.printf("Sym %d level0 %d  level1 %d  duration0 %d  duration1 %d\n", i, syms[i].level0,
-                    syms[i].level1, syms[i].duration0, syms[i].duration1);
-                }
-            }
-#endif
-            Serial.println("This should never happen since we don't use the callback");
-        } else {
-#endif
-            //Serial.println("Timed out - Resetting State");
-            //Serial.printf("Callback count =%d\n", callback_count);
             
-            // Stop the hardware immediately
-            rmt_disable(rx_chan); 
+        // Stop the hardware immediately
+        rmt_disable(rx_chan); 
 
-            // The driver will NOT trigger the callback when disabled.
-            // You must manually check the memory now.
-            // Note: Without the callback, you don't know exactly how many 'captured_symbols'.
-            // You will have to scan the buffer for the 'end' marker 
-            for (int i = 0; i < BUFFER_SIZE; i++) {
-                if (syms[i].duration0 == 0 && syms[i].duration1 == 0) {
-                    break; // Found the end of captured data
-                }
+        // The driver will NOT trigger the callback when disabled.
+        // You must manually check the memory now.
+        // Note: Without the callback, you don't know exactly how many 'captured_symbols'.
+        // You will have to scan the buffer for the 'end' marker 
+        for (int i = 0; i < BUFFER_SIZE; i++) {
+            if (syms[i].duration0 == 0 && syms[i].duration1 == 0) {
+                break; // Found the end of captured data
+            }
 
-                // Process your data here
-                uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
-                float width_us = (float)ticks / 10.0;
-                Serial.printf("Manual Read Sym: %.2f us\n", width_us);
-                //float width_us = syms[i].duration0 / 10.0;
-                //float width1_us = syms[i].duration1 / 10.0;
-                //Serial.printf("Manual Read Sym %d: %.2f us  %.2f  level0: %d,  level1: %d\n", i, 
-                //  width_us, width1_us, syms[i].level0, syms[i].level1);
-            } // for
+            // Process your data here
+            uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
+            float width_us = (float)ticks / 10.0;
+            Serial.printf("Manual Read Sym: %.2f us\n", width_us);
+            //float width_us = syms[i].duration0 / 10.0;
+            //float width1_us = syms[i].duration1 / 10.0;
+            //Serial.printf("Manual Read Sym %d: %.2f us  %.2f  level0: %d,  level1: %d\n", i, 
+            //  width_us, width1_us, syms[i].level0, syms[i].level1);
+        } // for
 
-            // Re-enabling clears the internal driver state.  Clean flush
-            //rmt_disable(rx_chan);
-            rmt_enable(rx_chan);
-            //Serial.printf("Callback count =%d\n", callback_count);
+        // Re-enabling clears the internal driver state.  Clean flush
+        //rmt_disable(rx_chan);
+        rmt_enable(rx_chan);
+        //Serial.printf("Callback count =%d\n", callback_count);
         
     } else {
         Serial.printf("rmt_receive error: %s\n", esp_err_to_name(ret));
     }
-
     delay(100); 
 }
-
-
-#
