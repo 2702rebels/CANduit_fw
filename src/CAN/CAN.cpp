@@ -31,44 +31,20 @@ void handle_twai_message(twai_message_t message){
     // Handle RTR frames
     if (message.rtr) {
         if (0<header.apiClass && header.apiClass <= std::size(readArray)){
-            if (readArray[header.apiClass] != nullptr) 
+            
+            if (readArray[header.apiClass] != nullptr) { // If the read is implemented
 
-                uint response = readArray[header.apiClass](header);
+                uint32_t response = readArray[header.apiClass](header);
+                send_rtr_reply(message.identifier, get_message_from_int(response));
+            }
         } // Implement response
     } 
     // Handle data frames
     else {
         if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
-            if (writeArray[header.apiClass] != nullptr) 
+            if (writeArray[header.apiClass] != nullptr) // If the read is implemented
 
                 writeArray[header.apiClass](header, &message.data);
         }
     }
 }
-
-
-
-
-/** @brief given a little endian array, gets a uint32_t from a range of bytes, indexed at 0
- * @param startByte inclusive starting byte
- * @param endByte inclusive ending byte
- */
-
-uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
-    if (startByte < 0 || endByte > 8 || endByte-startByte >= 4){
-        Serial.print("Attempted to retrieve non-existant bytes from message");
-        return 0;
-    }
-
-    uint32_t result = 0;
-    for (int i = endByte; i>=startByte;i--){ 
-        result <<= 8; 
-        result += (*data)[i]; 
-    }
-    
-
-    return result;
-}
-
-
-

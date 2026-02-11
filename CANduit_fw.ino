@@ -3,7 +3,6 @@
 #include "src/device/device.h"
 #include "driver/twai.h"
 
-#define POLLING_RATE_MS 100
 bool disabled = false;
 
 void setup() {
