@@ -29,9 +29,7 @@ constexpr struct [[gnu::packed]] {
     const uint32_t broadcast = 0;
     const uint32_t mode = 1;
     const uint32_t digState = 2;
-    const uint32_t period = 3;
-    const uint32_t highTime = 4;
-    const uint32_t lowTime = 5;
+    const uint32_t pwm = 3;
 } APIClass;
 
 void handle_twai_message(twai_message_t);
