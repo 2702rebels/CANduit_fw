@@ -1,10 +1,10 @@
 /** File for the captive portal that uses Wifi to change the device number of the CANduit, created by Alex S, and modified for implementation by Alex E.
  */
-#if 0
+
 #include <WebServer.h>
 #include <DNSServer.h>
 #include "WiFi.h"
-
+#include "thread"
 #include "device.h"
 
 // ================== WIFI CONFIG ==================
@@ -159,7 +159,7 @@ void handleUserIDInput() {
 
   // save to flash
   preferences.begin("canduit", false);
-  preferences.putInt("device_id", newID);
+  preferences.putInt("deviceNum", newID);
   preferences.end();
 
   deviceID = newID;
@@ -180,7 +180,6 @@ void captivePortalSetup() {
 
   // ---- LOAD STORED DEVICE ID ----
   deviceID = getDeviceID();
-  preferences.end();
 
   if (deviceID >= 0) {
     Serial.print("[NVS] Stored Device ID: ");
@@ -238,16 +237,17 @@ void captivePortalSetup() {
   server.onNotFound(handleRoot);
 
   server.begin();
-  Serial.println("[HTTP] Server started");
-  Serial.println("[SYSTEM] Setup complete");
+    
+
+    std::thread loop(captivePortalLoop);
+    Serial.println("Launched Captive portal event thread");
+    // We never need to close the thread as we want it to stay open as long as the canduit runs
 }
 
 // ================== LOOP ==================
 
-void loop() {
+void captivePortalLoop() {
   dnsServer.processNextRequest();
   server.handleClient();
 }
-  Serial.begin(115200);
-  delay(1500);
-#endif
+

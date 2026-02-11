@@ -46,8 +46,10 @@ void setup() {
     Serial.println("CAN is good to go");
     preferences.begin("CANduit",false);
     deviceID = getDeviceID();
-
     preferences.end();
+    #if WIFI
+      captivePortalSetup();
+    #endif
 }
 
 
