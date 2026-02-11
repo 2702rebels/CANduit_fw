@@ -3,7 +3,6 @@
 #include "src/device/device.h"
 #include "driver/twai.h"
 
-bool disabled = false;
 
 void setup() {
 
@@ -56,10 +55,6 @@ void setup() {
 void loop() {
 
   delay(10);
-  if (disabled) {
-    delay(1000);
-    return;
-  }
   
   // may refactor twai stuff to dedicated file but for now this is good
   uint32_t alerts_triggered;
