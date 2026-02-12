@@ -139,12 +139,8 @@ void handleUserIDInput() {
     return;
   }
 
-  // save to flash
-  preferences.begin("canduit", false);
-  preferences.putInt("deviceNum", newID);
-  preferences.end();
-
-  deviceID = newID;
+  // save to flash 
+  setDeviceID(newID);
 
   Serial.print("[DEVICE ID] Saved: ");
   Serial.println(deviceID);
