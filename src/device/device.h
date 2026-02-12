@@ -1,7 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#define WIFI false
+#define WIFI false 
 
 
 #include "Preferences.h"
