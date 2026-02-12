@@ -220,7 +220,7 @@ void captivePortalSetup() {
     
 
     TaskHandle_t portal_task;
-    xTaskCreate(captivePortalLoop, "PWMTask",500,NULL,0, &portal_task);
+    xTaskCreate(captivePortalLoop, "PWMTask",4096,NULL,0, &portal_task);
 
     Serial.println("Launched Captive portal event thread");
     // We never need to close the thread as we want it to stay open as long as the canduit runs
@@ -229,7 +229,10 @@ void captivePortalSetup() {
 // ================== LOOP ==================
 
 void captivePortalLoop(void *pvParameters) {
-  dnsServer.processNextRequest();
-  server.handleClient();
+    while (1) {
+      dnsServer.processNextRequest();
+      server.handleClient();
+      delay(100);
+    }
 }
 

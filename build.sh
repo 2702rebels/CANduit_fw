@@ -1,1 +1,1 @@
-arduino-cli compile --fqbn esp32:esp32:esp32 --build-path ./build
+arduino-cli compile --fqbn esp32:esp32:esp32s3 --build-path ./build

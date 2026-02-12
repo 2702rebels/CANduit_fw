@@ -24,7 +24,7 @@ void setupGPIO(){
     }
 }
 
-bool inPorts(int id) {return (0)<id && id<=portsCount;}
+bool inPorts(int id) {return (0)<=id && id<portsCount;}
 
 Port* getGPIO(int id){
     if (!inPorts(id)) return nullptr;

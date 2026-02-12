@@ -43,63 +43,73 @@ void PWMSetup() {
     rx_cfg.flags.en_partial_rx = true;
 
     TaskHandle_t pwm_task;
-    xTaskCreate(PWMTask, "PWMTask",250,NULL,0, &pwm_task);
+    xTaskCreate(PWMTask, "PWMTask",2048,NULL,0, &pwm_task);
 }
 
 
 void PWMTask(void *pvParameters) {
     // Start one-shot capture
-
-    for (int portId = 0; portId<7;portId++){
-        Port* port = getGPIO(portId);
-
-        if (port->mode != GPIOMode.PWM_IN) continue;
-        rmt_rx_channel_config_t rx_chan_config = {
-            .gpio_num = (gpio_num_t)GPIO[port->id],
-            .clk_src = RMT_CLK_SRC_DEFAULT,
-            .resolution_hz = RMT_RESOLUTION_HZ,
-            .mem_block_symbols = 48,
-        };
-        ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_chan_config, &rx_chan));
-        ESP_ERROR_CHECK(rmt_enable(rx_chan));
+    
+    while (1){
         
+        for (int portId = 0; portId<7;portId++){
+            Port* port = getGPIO(portId);
+            if (port == NULL){
+            Serial.println("Task Started");}
 
-        esp_err_t ret = rmt_receive(rx_chan, syms, BUFFER_SIZE, &rx_cfg); // pass num symbols
-        if (ret == ESP_OK) {
-            delay(100); //PHIL - use a shorter delay?
-                
-            // Stop the hardware immediately
-            rmt_disable(rx_chan);
-            rmt_del_channel(rx_chan);
-
-            // The driver will NOT trigger the callback when disabled.
-            // You must manually check the memory now.
-            // Note: Without the callback, you don't know exactly how many 'captured_symbols'.
-            // You will have to scan the buffer for the 'end' marker 
-            for (int i = 0; i < BUFFER_SIZE; i++) {
-                if (syms[i].duration0 == 0 && syms[i].duration1 == 0) {
-                    break; // Found the end of captured data
-                }
-
-                // Process your data here
-                uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
-                float width_us = (float)ticks / 10.0;
-                Serial.printf("Manual Read Sym: %.2f us\n", width_us);
-                
-                // If fallTime;
-                if (syms[0].level0 == 1) {
-                    highTime[port->id] = syms[0].duration0;
-                    lowTime[port->id] = syms[0].duration1;
-                } else {
-                    highTime[port->id] = syms[0].duration1;
-                    lowTime[port->id] = syms[0].duration0;
-                }
-                period[port->id] = syms[0].duration0 + syms[0].duration1;
-            } 
+            if (port->mode != GPIOMode.PWM_IN) continue;
+            rmt_rx_channel_config_t rx_chan_config = {
+                .gpio_num = (gpio_num_t)GPIO[port->id],
+                .clk_src = RMT_CLK_SRC_DEFAULT,
+                .resolution_hz = RMT_RESOLUTION_HZ,
+                .mem_block_symbols = 48,
+            };
+            esp_err_t err = rmt_new_rx_channel(&rx_chan_config, &rx_chan);
             
-        } else {
-            Serial.printf("rmt_receive error: %s\n", esp_err_to_name(ret));
+            if (err != ESP_OK || rx_chan == NULL) {
+                Serial.printf("Failed to create RMT channel: %s\n", esp_err_to_name(err));
+                continue; // Don't try to use a null channel!
+            }
+
+            ESP_ERROR_CHECK(rmt_enable(rx_chan));
+            
+            esp_err_t ret = rmt_receive(rx_chan, syms, BUFFER_SIZE, &rx_cfg); // pass num symbols
+            if (ret == ESP_OK) {
+                delay(100); //PHIL - use a shorter delay?
+                    
+                // Stop the hardware immediately
+                rmt_disable(rx_chan);
+                rmt_del_channel(rx_chan);
+
+                // The driver will NOT trigger the callback when disabled.
+                // You must manually check the memory now.
+                // Note: Without the callback, you don't know exactly how many 'captured_symbols'.
+                // You will have to scan the buffer for the 'end' marker 
+                for (int i = 0; i < BUFFER_SIZE; i++) {
+                    if (syms[i].duration0 == 0 && syms[i].duration1 == 0) {
+                        break; // Found the end of captured data
+                    }
+
+                    // Process your data here
+                    uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
+                    float width_us = (float)ticks / 10.0;
+                    Serial.printf("Manual Read Sym: %.2f us\n", width_us);
+                    
+                    // If fallTime;
+                    if (syms[0].level0 == 1) {
+                        highTime[port->id] = syms[0].duration0;
+                        lowTime[port->id] = syms[0].duration1;
+                    } else {
+                        highTime[port->id] = syms[0].duration1;
+                        lowTime[port->id] = syms[0].duration0;
+                    }
+                    period[port->id] = syms[0].duration0 + syms[0].duration1;
+                } 
+                
+            } else {
+                Serial.printf("rmt_receive error: %s\n", esp_err_to_name(ret));
+            }
         }
+        delay(100); 
     }
-    delay(100); 
 }
