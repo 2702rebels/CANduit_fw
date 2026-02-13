@@ -18,10 +18,9 @@ constexpr struct {
     const int DIG_IN = 1;
     const int DIG_OUT = 2;
     const int PWM_IN = 3;
-    const int I2C = 4; // Signifies that is in I2C mode. Shouldn't be able to set to this
 } GPIOMode;
 
-const int modesCount = 5;
+const int modesCount = 4;
 
 class Port {
 public:
@@ -49,30 +48,5 @@ extern volatile uint32_t period[8];
 extern volatile uint32_t highTime[8];
 extern volatile uint32_t lowTime[8];
 
-
-// Setup I2C class
-// I2C itself not implemented yet just laying framework
-
-class I2CMaster {
-    public:
-        I2CMaster(int SDA,int SCL);
-        Port* SDA;
-        Port* SCL;
-        
-        //std::array<uint8_t,8> request();
-        //void transmit(String msg);
-        void destroy();
-};
-
-class I2CSlave {
-    public:
-        I2CSlave(int SDA,int SCL);
-        Port* SDA;
-        Port* SCL;
-        
-        //void onRequest();
-        //void onRecieve();
-        void destroy();
-};
 
 #endif
