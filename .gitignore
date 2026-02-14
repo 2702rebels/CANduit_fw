@@ -1,6 +1,10 @@
 # Prerequisites
 *.d
 
+# Vi
+*~
+*.swp
+
 # Compiled Object files
 *.slo
 *.lo
