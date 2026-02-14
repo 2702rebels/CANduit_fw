@@ -35,6 +35,6 @@ constexpr struct [[gnu::packed]] {
 void handle_twai_message(twai_message_t);
 uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte);
 std::array<uint8_t,8> get_message_from_int(uint32_t dataInt);
-void send_rtr_reply(uint32_t rtrID, std::array<uint8_t,8> data);
+void send_rtr_reply(uint32_t rtrID, int DLC, std::array<uint8_t,8> data);
 
 #endif

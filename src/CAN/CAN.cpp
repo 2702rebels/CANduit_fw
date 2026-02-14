@@ -21,13 +21,14 @@ void handle_twai_message(twai_message_t message){
     header.manuf = (rxId & 0xFF0000) >> 16;
     header.devType = (rxId & 0x1F000000) >> 24;
     
-     
     // check for broadcast signals
     if (header.devType == 0 && header.manuf == 0) writeArray[0](header, &message.data);
-
+    
     // filter non-addressed messages
     if (header.devType != 10 || header.manuf != 8 || header.devNum != deviceID) return;
-    
+        
+    Serial.printf("\nMessage passed | class: %d, index: %d\n", header.apiClass, header.apiIndex);
+
     // Handle RTR frames
     if (message.rtr) {
         if (0<header.apiClass && header.apiClass <= std::size(readArray)){
@@ -35,7 +36,7 @@ void handle_twai_message(twai_message_t message){
             if (readArray[header.apiClass] != nullptr) { // If the read is implemented
 
                 uint32_t response = readArray[header.apiClass](header);
-                send_rtr_reply(message.identifier, get_message_from_int(response));
+                send_rtr_reply(message.identifier, message.data_length_code, get_message_from_int(response));
             }
         } // Implement response
     } 
@@ -43,7 +44,6 @@ void handle_twai_message(twai_message_t message){
     else {
         if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
             if (writeArray[header.apiClass] != nullptr) // If the read is implemented
-
                 writeArray[header.apiClass](header, &message.data);
         }
     }

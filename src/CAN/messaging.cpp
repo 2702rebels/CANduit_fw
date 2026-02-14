@@ -45,16 +45,16 @@ std::array<uint8_t,8> get_message_from_int(uint32_t dataInt) {
 
 /** @brief sends an rtr reply in little endian
  */
-void send_rtr_reply(uint32_t rtrID, std::array<uint8_t,8> data){
+void send_rtr_reply(uint32_t rtrID, int DLC, std::array<uint8_t,8> data){
     twai_message_t tx_msg;
     tx_msg.identifier = rtrID;      // Match the requested ID
     tx_msg.extd = 1;            // 0 for Standard, 1 for Extended (FRC is extended?)
     tx_msg.rtr = 0;             // MUST be 0 to send actual data
-    tx_msg.data_length_code = 1; // Number of bytes to send - should match the request
-    for (int i = 0; i<8;i++)
+    tx_msg.data_length_code = DLC; // Number of bytes to send - should match the request
+    for (int i = 0; i<DLC;i++)
         tx_msg.data[i] = data[i];
 
-
+    Serial.printf("DLC: %d, data0: %d, rtrID: %x\n", DLC, data[0], rtrID);
     esp_err_t rval = twai_transmit(&tx_msg, pdMS_TO_TICKS(POLLING_RATE_MS));
     if (rval != ESP_OK) {
       Serial.printf("Failed to send reply: 0x%x\n", rval);
