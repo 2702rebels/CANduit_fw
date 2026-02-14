@@ -18,22 +18,27 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]);
 // Define read operations
 uint32_t MODE_R(CANHeader header);
 uint32_t DIGITAL_STATE_R(CANHeader header);
-uint32_t PWM_R(CANHeader header);
+//uint32_t PWM_R(CANHeader header);
+uint32_t PERIOD_R(CANHeader header);
+uint32_t HIGHTIME_R(CANHeader header);
+uint32_t LOWTIME_R(CANHeader header);
 
 // Declare write and read arrays. Make sure to put items in order as they are in CAN.h APIClass struct
 // Add nullptr for unimplemented functions or just empty slots
-const writeOperation writeArray[4] = {
+const writeOperation writeArray[] = {
     BROADCAST_ALL, 
     MODE_W, 
     DIGITAL_STATE_W, 
     nullptr, // Pwm has no write 
 };
 
-const readOperation readArray[4] = {
+const readOperation readArray[] = {
     nullptr, // Broadcastr has no read operation
     MODE_R, 
     DIGITAL_STATE_R, 
-    PWM_R
+    PERIOD_R,
+    HIGHTIME_R,
+    LOWTIME_R 
 };
 
 
