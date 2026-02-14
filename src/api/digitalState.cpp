@@ -6,17 +6,19 @@
 
 // Write port mode
 void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
-    // Header.apiIndex acts as the port ID
-
-    if (!inPorts(header.apiIndex)) return;
+    // Header.apiIndex acts as the port I
     
+    if (!inPorts(header.apiIndex)) return;
+   
     Port *port = getGPIO(header.apiIndex);
     
     if (port->mode != GPIOMode.DIG_OUT) return;
 
+
     int setting = (*data)[0];
     if (setting != 0 && setting != 1) return;
     
+
     port->outValue = setting;
     digitalWrite(GPIO[port->id], setting);
 }

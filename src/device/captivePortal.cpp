@@ -1,6 +1,7 @@
 /** File for the captive portal that uses Wifi to change the device number of the CANduit, created by Alex S, and modified for implementation by Alex E.
  */
 
+#include "Arduino.h"
 #include <WebServer.h>
 #include <DNSServer.h>
 #include "WiFi.h"
@@ -131,10 +132,10 @@ void handleUserIDInput() {
   int newID = server.arg("userSetDeviceID").toInt();
 
   // HARD RULE: 6-bit value only
-  if (newID < 0 || newID > 31) {
+  if (newID < 0 || newID > 63) {
     Serial.print("[DEVICE ID][ERROR] Invalid ID: ");
     Serial.println(newID);
-    statusMessage = "Invalid Device ID (must be 0–31)";
+    statusMessage = "Invalid Device ID (must be 0–63)";
     server.send(200, "text/html", buildHTMLPage());
     return;
   }

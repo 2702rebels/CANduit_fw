@@ -15,12 +15,14 @@ void BROADCAST_ALL(CANHeader header, uint8_t (*data)[8]){
 
 
 void disable(){
+    return; // remove this later
     resetAllPorts();
-    
+    int i = 0;
     while (1){
         // Add blinking pattern
-        Serial.println("Disabled");
-        delay(2000);
+        delay(1000);
+        Serial.printf("Disabled #%d\n", i);
+        i++;
     }
 
     // Turn mainloop into an LED blinking pattern

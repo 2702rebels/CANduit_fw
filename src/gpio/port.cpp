@@ -6,8 +6,6 @@
 Port::Port(){}
 
 void Port::reset(){
-    // The default port is defined to be a digital output with a value of LOW
-    if (!inPorts(id)) return;
     
     mode = GPIOMode.UNASSIGNED;
     outValue = 0;
@@ -18,15 +16,15 @@ void Port::reset(){
 
 }
 
-void Port::setMode(int mode){
+void Port::setMode(int _mode){
     
-    if (!(0<id && id <= modesCount)) return;
+    if (!(0<_mode && _mode <= modesCount)) return;
     reset();
 
     // Based on the mode switch the gpio port settings. No need to add setting for unassigned since that is covered by reset
-    this->mode = mode;
+    mode = _mode;
 
-    switch (mode){
+    switch (_mode){
         case GPIOMode.DIG_IN:
             readOnly = true;
             pinMode(GPIO[id],INPUT);

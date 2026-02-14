@@ -59,9 +59,7 @@ void setup() {
 
 
 void loop() {
-
-  delay(10);
-  
+ 
   // may refactor twai stuff to dedicated file but for now this is good
   uint32_t alerts_triggered;
   twai_read_alerts(&alerts_triggered, pdMS_TO_TICKS(POLLING_RATE_MS));
