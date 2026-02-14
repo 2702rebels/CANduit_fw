@@ -14,13 +14,14 @@ void setupGPIO(){
         newPort.readOnly = true;
 
         ports[g] = newPort; 
-        pinMode(GPIO[g],OUTPUT);
-        digitalWrite(GPIO[g],LOW);
+        pinMode(GPIO[g], INPUT); // PHIL default to input
+        //pinMode(GPIO[g],OUTPUT);
+        //digitalWrite(GPIO[g],LOW);
 
         pinMode(PWR[g],OUTPUT);
         pinMode(DIR[g],OUTPUT);
-        digitalWrite(PWR[g],LOW);
-        digitalWrite(DIR[g],HIGH);
+        digitalWrite(PWR[g],LOW); // PHIL change back to low
+        digitalWrite(DIR[g],LOW); // Input by default
     }
 }
 

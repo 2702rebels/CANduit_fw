@@ -22,29 +22,45 @@ void handle_twai_message(twai_message_t message){
     header.devType = (rxId & 0x1F000000) >> 24;
     
     // check for broadcast signals
-    if (header.devType == 0 && header.manuf == 0) writeArray[0](header, &message.data);
+    if (header.devType == 0 && header.manuf == 0) 
+    {
+       Serial.println("Got broadcast");
+       writeArray[0](header, &message.data);
+    }
     
     // filter non-addressed messages
     if (header.devType != 10 || header.manuf != 8 || header.devNum != deviceID) return;
         
-    Serial.printf("\nMessage passed | class: %d, index: %d\n", header.apiClass, header.apiIndex);
+    //Serial.printf("\nMessage passed | class: %d, index: %d, rtr %d  data[0] %d\n", header.apiClass, header.apiIndex, message.rtr, message.data[0]);
 
+    //Serial.printf("rxId : 0x%x\n", rxId);
     // Handle RTR frames
     if (message.rtr) {
         if (0<header.apiClass && header.apiClass <= std::size(readArray)){
             
             if (readArray[header.apiClass] != nullptr) { // If the read is implemented
-
-                uint32_t response = readArray[header.apiClass](header);
+                //Serial.printf("Passing header with apiIndex %d", header.apiIndex);
+                uint32_t response = readArray[header.apiClass](header); // PHIL - what happens if apiClass goes past the end of the array?
                 send_rtr_reply(message.identifier, message.data_length_code, get_message_from_int(response));
+		//send_rtr_reply(message.identifier, 1, 0xAA);
             }
+	    else
+	    {
+		Serial.println("Bad class");
+	    }
         } // Implement response
+	else
+	{
+	    Serial.printf("Don't reply bad class\n");
+	}
     } 
     // Handle data frames
     else {
+	// PHIL what is this check for?
         if (0<header.apiClass && header.apiClass <= std::size(writeArray)){
             if (writeArray[header.apiClass] != nullptr) // If the read is implemented
                 writeArray[header.apiClass](header, &message.data);
         }
     }
+    //Serial.printf("\nPost Message passed | class: %d, index: %d, rtr %d  data[0] %d\n", header.apiClass, header.apiIndex, message.rtr, message.data[0]);
 }

@@ -10,10 +10,11 @@ void setup() {
     delay(1000);
 
     setupGPIO();
+    Serial.println("Calling PWMSetup");
     PWMSetup();
 
     // setup TWAI
-    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)TX_PIN, (gpio_num_t)RX_PIN, TWAI_MODE_LISTEN_ONLY);
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)TX_PIN, (gpio_num_t)RX_PIN, TWAI_MODE_NORMAL);
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS(); 
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
@@ -67,11 +68,22 @@ void loop() {
   twai_get_status_info(&twaistatus);
 
 
-  
-
   if (alerts_triggered & TWAI_ALERT_ERR_PASS) {
     Serial.println("Alert: TWAI controller has become error passive.");
   }
+      if (alerts_triggered & TWAI_ALERT_BUS_ERROR) {
+      //Serial.println("Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
+      Serial.printf("Bus error count: %d\n", twaistatus.bus_error_count);
+      Serial.flush();
+    }
+    if (alerts_triggered & TWAI_ALERT_RX_QUEUE_FULL) {
+      //Serial.println("Alert: The RX queue is full causing a received frame to be lost.");
+      //Serial.flush();
+      
+      //Serial.printf("RX buffered: %d\t", twaistatus.msgs_to_rx);
+      //Serial.printf("RX missed: %d\t", twaistatus.rx_missed_count);
+      //Serial.printf("RX overrun %d\n", twaistatus.rx_overrun_count);
+    }
 
   // Check if message is received
   if (alerts_triggered & TWAI_ALERT_RX_DATA) {
