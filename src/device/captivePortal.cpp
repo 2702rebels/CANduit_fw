@@ -8,6 +8,37 @@
 #include "freertos/task.h"
 #include "device.h"
 
+
+
+////////////////////////////////////
+// Define general deviceID functions
+////////////////////////////////////
+
+Preferences preferences;
+
+void setDeviceID(int id){
+    preferences.begin("canduit",false);
+    preferences.putInt("deviceNum",id);
+    deviceID = id;
+    preferences.end();
+}
+
+
+int getDeviceID(){
+    preferences.begin("canduit",false);
+    int deviceNum = preferences.getInt("deviceNum",0);
+    
+    preferences.end();
+    return deviceNum;
+}
+
+int deviceID = getDeviceID();
+
+/////////////////////////////////
+// Configure CAPTIVE PORTAL 
+/////////////////////////////////
+
+
 // ================== WIFI CONFIG ==================
 const char* AP_SSID = "CANduit_Setup"; // 
 const char* AP_PASS = "";  // open network
@@ -232,4 +263,3 @@ void captivePortalLoop(void *pvParameters) {
       delay(100);
     }
 }
-
