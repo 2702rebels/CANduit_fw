@@ -1,7 +1,7 @@
 #ifndef API_H
 #define API_H
 
-#include "./CAN.h"
+#include "CAN.h"
 #include "stdint.h"
 
 typedef void (*writeOperation)(CANHeader header, uint8_t (*data)[8]); 
