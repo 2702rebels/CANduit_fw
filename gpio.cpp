@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "src/gpio/gpio.h"
+#include "./gpio.h"
 
 
 /////////////////////////////////

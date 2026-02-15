@@ -1,8 +1,8 @@
 #include "Arduino.h"
 #include "stdint.h"
-#include "src/gpio/gpio.h"
-#include "src/CAN/CAN.h"
-#include "src/api/api.h"
+#include "./gpio.h"
+#include "./CAN.h"
+#include "./api.h"
 
 
 /////////////////////////////////

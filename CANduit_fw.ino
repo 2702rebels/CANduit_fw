@@ -1,6 +1,6 @@
-#include "src/CAN/CAN.h"
-#include "src/gpio/gpio.h"
-#include "src/device/device.h"
+#include "./CAN.h"
+#include "./gpio.h"
+#include "./device.h"
 #include "driver/twai.h"
 
 
