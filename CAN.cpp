@@ -1,7 +1,7 @@
 #include "driver/twai.h"
-#include "src/CAN/CAN.h"
-#include "src/device/device.h"
-#include "src/api/api.h"
+#include "./CAN.h"
+#include "./device.h"
+#include "./api.h"
 
 
 void handle_twai_message(twai_message_t message){

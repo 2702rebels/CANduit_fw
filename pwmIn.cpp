@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "stdint.h"
-#include "src/gpio/gpio.h"
+#include "./gpio.h"
 #include "driver/rmt_rx.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
