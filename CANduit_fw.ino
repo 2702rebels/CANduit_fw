@@ -56,6 +56,10 @@ void setup() {
     #if WIFI
       captivePortalSetup();
     #endif
+
+    
+    setupBroadcast();
+    Serial.println("Constant CAN broadcasts initialized");
 }
 
 

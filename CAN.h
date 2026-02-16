@@ -25,6 +25,7 @@ struct [[gnu::packed]] CANHeader {
     uint32_t devType:5;
 };
 
+
 constexpr struct [[gnu::packed]] {
     const uint32_t broadcast = 0;
     const uint32_t mode = 1;
@@ -32,9 +33,12 @@ constexpr struct [[gnu::packed]] {
     const uint32_t pwm = 3;
 } APIClass;
 
+
+extern uint32_t broadcastTimer;
+
+void setupBroadcast(); 
 void handle_twai_message(twai_message_t);
 uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte);
 std::array<uint8_t,8> get_message_from_int(uint32_t dataInt);
-void send_rtr_reply(uint32_t rtrID, int DLC, std::array<uint8_t,8> data);
-
-#endif
+void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data);
+# endif

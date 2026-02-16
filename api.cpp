@@ -3,7 +3,8 @@
 #include "gpio.h"
 #include "CAN.h"
 #include "api.h"
-
+#include "device.h"
+#include "array"
 
 /////////////////////////////////
 // Define BROADCAST functions
@@ -52,7 +53,6 @@ void MODE_W(CANHeader header, uint8_t (*data)[8]){
 
 // Read modes
 uint32_t MODE_R(CANHeader header){
-    Serial.println("ohno"); 
     if (!inPorts(header.apiIndex)) return 0;
     
     Port *port = getGPIO(header.apiIndex);
@@ -82,59 +82,45 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
 }
 
 
-// Read modes
-uint32_t DIGITAL_STATE_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex);
-    
-    if (port->mode != GPIOMode.DIG_IN) return 0;
 
-    return digitalRead(GPIO[port->id]);
+
+
+////////////////////////////////////////
+// Define BROADCAST message transmitters
+////////////////////////////////////////
+
+void BROADCAST_STATUS(){
+        unsigned int identifier;
+
+        int apiClass = 20; // According to protocol document
+        int apiIndex = 0;
+        identifier = (deviceID + 
+                (apiIndex << 6) +
+                (apiClass << 10) +
+                (8 << 16) + // Manuf 
+                (10 << 24) // DevType
+        );
+
+        
+        std::array<uint8_t,8> data = {};
+
+        // fill first byte
+        for (int g = 7; g>=0;g++){
+            if (!inPorts(g)) continue;
+        
+            Port *port = getGPIO(g);
+            
+            if (port->mode != GPIOMode.DIG_IN) continue;
+            
+            data[0] <<= 1;
+            data[0] = digitalRead(GPIO[port->id]);
+        }
+        
+        // the bitmask of internal state and error flags has yet to be determined
+        
+
+
+        send_data_frame(identifier,3,data);
 }
 
 
-
-
-/////////////////////////////////
-// Define PWM INPUT functions
-/////////////////////////////////
-
-// Period only has read mode
-// period, hightime, and lowtime are defined in gpio.h
-
-
-uint32_t PERIOD_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex);
-    
-
-    return period[port->id];
-}
-
-
-
-uint32_t HIGHTIME_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex); // Use array lookup? - PHIL
-    Serial.printf("Read high time %d from port %d\n", highTime[port->id], port->id);  
-
-    return highTime[port->id];
-}
-
-
-
-uint32_t LOWTIME_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex);
-    
-
-    return lowTime[port->id];
-}
