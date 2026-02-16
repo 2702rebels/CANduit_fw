@@ -14,6 +14,7 @@ void BROADCAST_RECIEVE(CANHeader header, uint8_t (*data)[8]); // special case, g
 
 // Broadcast sends
 void BROADCAST_STATUS();
+void BROADCAST_PWM_TIMES();
 
 // Define write operations
 void MODE_W(CANHeader header, uint8_t (*data)[8]);
@@ -41,7 +42,8 @@ const readOperation confFuncArray[] = {
 
 // Functions which output value on the broadcast timer
 const broadcastOperation broadcastFuncArray[] = {
-    BROADCAST_STATUS
+    BROADCAST_STATUS,
+    BROADCAST_PWM_TIMES
 };
 
 

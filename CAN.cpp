@@ -3,6 +3,8 @@
 #include "device.h"
 #include "api.h"
 #include "freertos/task.h"
+#include "vector"
+#include "bitset"
 
 
 void handle_twai_message(twai_message_t message){
@@ -115,6 +117,35 @@ std::array<uint8_t,8> get_message_from_int(uint32_t dataInt) {
     }
 
     return data;
+}
+
+// Packs given data into a uint8_t, 8 length array, given a vector of numbers and bit sizes, where the two must be equal. Theoretically makes get_message_from_int function obsolete but is untested.
+std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes){
+    std::array<uint8_t,8> packedData = {};
+
+    int arrSize = std::size(data);
+
+    if (arrSize != std::size(bitSizes)) {
+        Serial.println("Attempted to pack data with extra datapoints in either the data or the bitSizes");
+        return packedData;
+    };
+
+    // Store bits in bitset;
+    std::bitset<64> bs;
+    int totalSize = 0;
+    for (int idx = 0; idx < arrSize;idx++){
+        bs |= (data[idx]<<totalSize);
+        totalSize += bitSizes[0];
+    }
+
+    //Convert bitset byte by byte to array
+    std::bitset<64> mask(0xFF);
+    for (int idx = 0; idx < 8;idx++){
+        packedData[idx] = (bs & mask).to_ulong();
+        bs >>= 8;
+    }
+
+    return packedData;
 }
 
 

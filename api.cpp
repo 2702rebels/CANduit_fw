@@ -105,7 +105,7 @@ void BROADCAST_STATUS(){
         std::array<uint8_t,8> data = {};
 
         // fill first byte
-        for (int g = 7; g>=0;g++){
+        for (int g = 7; g>=0;g--){
             if (!inPorts(g)) continue;
         
             Port *port = getGPIO(g);
@@ -121,6 +121,42 @@ void BROADCAST_STATUS(){
 
 
         send_data_frame(identifier,3,data);
+}
+
+
+void BROADCAST_PWM_TIMES(){
+        unsigned int identifier;
+        int apiClass = 21; // According to protocol document
+
+        std::vector<uint32_t> bitSizes = {4,4};
+
+        for (int g = 0; g<= 8; g++){ // on message per port
+            
+            Port *port = getGPIO(g);
+            if (port->mode != GPIOMode.PWM_IN) {
+                continue;
+            }
+
+
+            int apiIndex = g; // is the port according to the canduit protocol
+            identifier = (deviceID + 
+                    (apiIndex << 6) +
+                    (apiClass << 10) +
+                    (8 << 16) + // Manuf 
+                    (10 << 24) // DevType
+            );
+
+            // Check if mode is not valid 
+
+            std::vector<uint32_t> datapoints = {
+                highTime[g], period[g]
+            };
+
+            std::array<uint8_t,8> data = pack_data(datapoints, bitSizes);
+                        
+            
+            send_data_frame(identifier,8,data);
+        }
 }
 
 
