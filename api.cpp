@@ -155,7 +155,7 @@ void BROADCAST_PWM_TIMES(){
 
         std::vector<uint32_t> bitSizes = {4,4};
 
-        for (int g = 0; g<= 8; g++){ // on message per port
+        for (int g = 0; g< 8; g++){ // on message per port
             
             Port *port = getGPIO(g);
             if (port->mode != GPIOMode.PWM_IN) {

@@ -57,7 +57,7 @@ void handle_twai_message(twai_message_t message){
             if (writeFuncArray[header.apiClass] != nullptr) // If the read is implemented
                 writeFuncArray[header.apiClass](header, &message.data);
         } else {
-            Serial.println("bad Class");
+            Serial.printf("bad Class %d\n", header.apiClass);
         }
     }
     //Serial.printf("\nPost Message passed | class: %d, index: %d, rtr %d  data[0] %d\n", header.apiClass, header.apiIndex, message.rtr, message.data[0]);
@@ -66,7 +66,6 @@ void handle_twai_message(twai_message_t message){
 // runs on a task, handles the constant broadcasts
 void broadcastHandler(void *pvParameters) {
     while (1) {
-        
         for (broadcastOperation bcast : broadcastFuncArray){
             bcast();
         }
