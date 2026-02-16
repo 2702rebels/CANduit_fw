@@ -134,7 +134,7 @@ std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t
     int totalSize = 0;
     for (int idx = 0; idx < arrSize;idx++){
         bs |= (
-                (long) (data[idx] & (1ULL << (bitSizes[idx])-1))
+                (long) (data[idx] & ((1ULL << bitSizes[idx])-1))
                 ) << totalSize;
         totalSize += bitSizes[idx];
     }
