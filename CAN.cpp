@@ -38,7 +38,7 @@ void handle_twai_message(twai_message_t message){
     //Serial.printf("rxId : 0x%x\n", rxId);
     // Handle RTR frames
     if (message.rtr) {
-        if (header.apiClass <= std::size(readFuncArray)){
+        if (header.apiClass < std::size(readFuncArray)){
             
             if (readFuncArray[header.apiClass] != nullptr) { // If the read is implemented
                 //Serial.printf("Passing header with apiIndex %d", header.apiIndex);
@@ -58,7 +58,7 @@ void handle_twai_message(twai_message_t message){
     } 
     // Handle data frames
     else {
-        if (header.apiClass <= std::size(writeFuncArray)){ // Handle an apiClass goes past end of array
+        if (header.apiClass < std::size(writeFuncArray)){ // Handle an apiClass goes past end of array
                                                            //
             if (writeFuncArray[header.apiClass] != nullptr) // If the read is implemented
                 writeFuncArray[header.apiClass](header, &message.data);
