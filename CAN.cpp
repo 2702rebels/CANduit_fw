@@ -42,7 +42,7 @@ void handle_twai_message(twai_message_t message){
             if (confFuncArray[header.apiClass] != nullptr) { // If the read is implemented
                 //Serial.printf("Passing header with apiIndex %d", header.apiIndex);
                 uint32_t response = confFuncArray[header.apiClass](header); // PHIL - what happens if apiClass goes past the end of the array?
-                send_data_frame(message.identifier, message.data_length_code, get_message_from_int(response));
+                send_data_frame(message.identifier, message.data_length_code, pack_data(response));
 		//send_rtr_reply(message.identifier, 1, 0xAA);
             } else{
                 Serial.println("Bad class");
@@ -104,11 +104,10 @@ uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
     return result;
 }
 
-/**@brief returns a little endian message containing a number up to 4 bytes.
+/**@brief packs a single integer into a uint8_t, length 8 array. Less versatile but easier to use and more efficient than the pack_data below
  * 
  */
-std::array<uint8_t,8> get_message_from_int(uint32_t dataInt) {
-    // function could be made more flexible, to perhaps support multiple arguments, but functions for our purposes
+std::array<uint8_t,8> pack_data(uint32_t dataInt) {
     std::array<uint8_t, 8> data{};
     for (int i = 0; i<4; i++){
         uint8_t dataByte = dataInt & 0xFF;
@@ -119,7 +118,8 @@ std::array<uint8_t,8> get_message_from_int(uint32_t dataInt) {
     return data;
 }
 
-// Packs given data into a uint8_t, 8 length array, given a vector of numbers and bit sizes, where the two must be equal. Theoretically makes get_message_from_int function obsolete but is untested.
+/**Packs given data into a uint8_t, 8 length array, given a vector of numbers and bit sizes, where the two must be equal. Is untested.
+ */
 std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes){
     std::array<uint8_t,8> packedData = {};
 

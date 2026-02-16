@@ -39,7 +39,7 @@ extern uint32_t broadcastTimer;
 void setupBroadcast(); 
 void handle_twai_message(twai_message_t);
 uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte);
-std::array<uint8_t,8> get_message_from_int(uint32_t dataInt);
+std::array<uint8_t,8> pack_data(uint32_t dataInt);
 void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data);
 std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes);
 # endif
