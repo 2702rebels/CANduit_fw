@@ -130,17 +130,19 @@ std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t
     };
 
     // Store bits in bitset;
-    std::bitset<64> bs;
+    long bs;
     int totalSize = 0;
     for (int idx = 0; idx < arrSize;idx++){
-        bs |= (data[idx]<<totalSize);
-        totalSize += bitSizes[0];
+        bs |= (
+                (long) (data[idx] & (1ULL << (bitSizes[idx])-1))
+                ) << totalSize;
+        totalSize += bitSizes[idx];
     }
 
     //Convert bitset byte by byte to array
-    std::bitset<64> mask(0xFF);
+    long mask = 0xFF;
     for (int idx = 0; idx < 8;idx++){
-        packedData[idx] = (bs & mask).to_ulong();
+        packedData[idx] = bs & mask;
         bs >>= 8;
     }
 
