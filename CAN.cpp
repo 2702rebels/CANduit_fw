@@ -45,14 +45,10 @@ void handle_twai_message(twai_message_t message){
                 uint32_t response = readFuncArray[header.apiClass](header); // PHIL - what happens if apiClass goes past the end of the array?
                 send_rtr_reply(message.identifier, message.data_length_code, get_message_from_int(response));
 		//send_rtr_reply(message.identifier, 1, 0xAA);
-            }
-            else
-            {
+            } else{
                 Serial.println("Bad class");
             }
-        }
-            else
-        {
+        } else {
             Serial.printf("Don't reply bad class\n");
         }
     } 
