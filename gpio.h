@@ -46,6 +46,6 @@ void PWMSetup();
 extern volatile uint32_t period[8];
 extern volatile uint32_t highTime[8];
 extern volatile uint32_t lowTime[8];
-
+extern volatile uint32_t samplePeriod;
 
 #endif

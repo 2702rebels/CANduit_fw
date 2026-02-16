@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "driver/twai.h"
 #include "array"
+#include "vector"
 
 #define POLLING_RATE_MS 100
 
@@ -34,11 +35,11 @@ constexpr struct [[gnu::packed]] {
 } APIClass;
 
 
-extern uint32_t broadcastTimer;
+extern uint32_t broadcastPeriod;
 
 void setupBroadcast(); 
 void handle_twai_message(twai_message_t);
-uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte);
+uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte);
 std::array<uint8_t,8> pack_data(uint32_t dataInt);
 void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data);
 std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes);

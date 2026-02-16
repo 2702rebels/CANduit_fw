@@ -3,7 +3,6 @@
 #include "device.h"
 #include "api.h"
 #include "freertos/task.h"
-#include "vector"
 #include "bitset"
 
 
@@ -71,12 +70,13 @@ void broadcastHandler(void *pvParameters) {
         for (broadcastOperation bcast : broadcastFuncArray){
             bcast();
         }
-        delay(broadcastTimer);
+        delay(broadcastPeriod);
     }
 }
 
+uint32_t broadcastPeriod = 20;
 
-void setupBroadcast(){ 
+void setupBroadcast(){
     TaskHandle_t broadcast_task;
     xTaskCreate(broadcastHandler, "BROADCASTHANDLE",4096,NULL,0, &broadcast_task);
 }
@@ -88,7 +88,7 @@ void setupBroadcast(){
  * @param endByte inclusive ending byte
  */
 
-uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
+uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte){
     if (startByte < 0 || endByte >= 8 || endByte-startByte >= 4){
         Serial.print("Attempted to retrieve non-existant bytes from message");
         return 0;

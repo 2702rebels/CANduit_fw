@@ -19,10 +19,11 @@ void BROADCAST_PWM_TIMES();
 // Define write operations
 void MODE_W(CANHeader header, uint8_t (*data)[8]);
 void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]);
-
+void CONFIG_W(CANHeader header, uint8_t (*data)[8]);
 
 // Define read operations
 uint32_t MODE_R(CANHeader header);
+uint32_t CONFIG_R(CANHeader header);
 
 
 
@@ -31,13 +32,23 @@ const writeOperation writeFuncArray[] = {
     BROADCAST_RECIEVE, 
     MODE_W, 
     DIGITAL_STATE_W,
+    nullptr,
+    nullptr,
+    nullptr,
+    CONFIG_W
 };
 
 
 // Functions which return values on RTR frames, for example, Reading Mode, Broadcast period, pwm sample period
 const readOperation confFuncArray[] = {
     nullptr,
-    MODE_R, 
+    MODE_R,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    CONFIG_R
+
 };
 
 // Functions which output value on the broadcast timer

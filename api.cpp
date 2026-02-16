@@ -81,7 +81,32 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
     digitalWrite(GPIO[port->id], setting);
 }
 
+/////////////////////////////////
+// Define PERIOD CONFIG functions
+/////////////////////////////////
 
+void CONFIG_W(CANHeader header, uint8_t (*data)[8]){
+    switch (header.apiIndex){
+        case 1:
+            broadcastPeriod = unpack_int(data,0,1);
+            break;
+        case 2:
+            samplePeriod = unpack_int(data,0,1);
+            break;
+    }
+}
+
+uint32_t CONFIG_R(CANHeader header){
+
+    switch (header.apiIndex){
+        case 0: // broadcast period
+            return broadcastPeriod;
+
+        case 1: //pwm sample period
+            return samplePeriod;
+    }
+    return 0;
+}
 
 
 
