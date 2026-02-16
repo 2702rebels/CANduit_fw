@@ -153,7 +153,7 @@ void BROADCAST_PWM_TIMES(){
         unsigned int identifier;
         int apiClass = 21; // According to protocol document
 
-        std::vector<uint32_t> bitSizes = {4,4};
+        std::vector<uint32_t> bitSizes = {32,32};
 
         for (int g = 0; g< 8; g++){ // on message per port
             
