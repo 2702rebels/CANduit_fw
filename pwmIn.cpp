@@ -12,6 +12,7 @@ volatile uint32_t lowTime[8];
 #define RMT_RESOLUTION_HZ 10000000 // 80MHz for high precision (12.5ns per tick)
 #define IDLE_THRES_NS     2000000  // 2ms idle threshold (fits @ 10MHz)
 #define BUFFER_SIZE 48
+#define RMT_TICK_DIAMETRE 100
 
 void PWMTask(void *pvParameters);
 
@@ -104,13 +105,13 @@ void PWMTask(void *pvParameters) {
                     
                     // If fallTime;
                     if (syms[0].level0 == 1) {
-                        highTime[port->id] = syms[0].duration0*100; // *100 to convert to nsec - switch to #define PHIL
-                        lowTime[port->id] = syms[0].duration1*100;
+                        highTime[port->id] = syms[0].duration0*RMT_TICK_DIAMETRE; // *100 to convert to nsec - switch to #define PHIL
+                        lowTime[port->id] = syms[0].duration1*RMT_TICK_DIAMETRE;
                     } else {
-                        highTime[port->id] = syms[0].duration1*100;
-                        lowTime[port->id] = syms[0].duration0*100;
+                        highTime[port->id] = syms[0].duration1*RMT_TICK_DIAMETRE;
+                        lowTime[port->id] = syms[0].duration0*RMT_TICK_DIAMETRE;
                     }
-                    period[port->id] = (syms[0].duration0 + syms[0].duration1)*100;
+                    period[port->id] = (syms[0].duration0 + syms[0].duration1)*RMT_TICK_DIAMETRE;
 		    //Serial.printf("high time %d\n", highTime[port->id]);
                 } 
                 
