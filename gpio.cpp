@@ -15,7 +15,7 @@ void Port::reset(){
     pinMode(GPIO[id],OUTPUT);
     digitalWrite(GPIO[id],LOW);
     digitalWrite(PWR[id],LOW);
-
+    outValue = 0;
 }
 
 void Port::setMode(int _mode){
@@ -64,6 +64,7 @@ void setupGPIO(){
         newPort.id = g;
         newPort.mode = GPIOMode.UNASSIGNED;
         newPort.readOnly = true;
+        newPort.outValue = 0;
 
         ports[g] = newPort; 
         pinMode(GPIO[g], INPUT); // PHIL default to input

@@ -109,8 +109,7 @@ uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte){
 std::array<uint8_t,8> pack_data(uint32_t dataInt) {
     std::array<uint8_t, 8> data{};
     for (int i = 0; i<4; i++){
-        uint8_t dataByte = dataInt & 0xFF;
-        data[i] = dataByte;
+        data[i] = (uint8_t) dataInt & 0xFF;
         dataInt >>= 8;
     }
 

@@ -5,6 +5,7 @@
 #include "api.h"
 #include "device.h"
 #include "array"
+#include <bit>
 
 /////////////////////////////////
 // Define BROADCAST functions
@@ -77,7 +78,7 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
 
     int setting = (*data)[0];
     if (setting != 0 && setting != 1) return;
-    
+    port-> outValue = setting;    
     digitalWrite(GPIO[port->id], setting);
 }
 
@@ -115,16 +116,17 @@ uint32_t CONFIG_R(CANHeader header){
 ////////////////////////////////////////
 
 void BROADCAST_STATUS(){
-        unsigned int identifier;
+        uint32_t identifier;
 
-        int apiClass = 20; // According to protocol document
-        int apiIndex = 0;
-        identifier = (deviceID + 
-                (apiIndex << 6) +
-                (apiClass << 10) +
-                (8 << 16) + // Manuf 
-                (10 << 24) // DevType
-        );
+
+        CANHeader header;
+        header.apiClass = 20;
+        header.apiIndex = 0;
+        header.devNum = deviceID;
+        header.devType = 10;
+        header.manuf = 8;
+
+        identifier = std::bit_cast<uint32_t>(header); // convert struct to uint32_t
 
         
         std::array<uint8_t,8> data = {};
@@ -135,25 +137,29 @@ void BROADCAST_STATUS(){
         
             Port *port = getGPIO(g);
             
-            if (port->mode != GPIOMode.DIG_IN) continue;
-            
             data[0] <<= 1;
-            data[0] = digitalRead(GPIO[port->id]);
+            if (port->mode == GPIOMode.DIG_IN){
+                data[0] |= digitalRead(GPIO[port->id]);
+            
+            } else if (port->mode == GPIOMode.DIG_OUT){
+                data[0] |= port->outValue;
+            }
         }
         
         // the bitmask of internal state and error flags has yet to be determined
         
 
 
-        send_data_frame(identifier,3,data);
+        send_data_frame(identifier,4,data);
 }
 
 
 void BROADCAST_PWM_TIMES(){
-        unsigned int identifier;
-        int apiClass = 21; // According to protocol document
+        uint32_t identifier;
+        CANHeader header;
 
         std::vector<uint32_t> bitSizes = {32,32};
+
 
         for (int g = 0; g< 8; g++){ // on message per port
             
@@ -162,14 +168,13 @@ void BROADCAST_PWM_TIMES(){
                 continue;
             }
 
+            header.apiClass = 21;
+            header.apiIndex = g;
+            header.devNum = deviceID;
+            header.devType = 10;
+            header.manuf = 8;
 
-            int apiIndex = g; // is the port according to the canduit protocol
-            identifier = (deviceID + 
-                    (apiIndex << 6) +
-                    (apiClass << 10) +
-                    (8 << 16) + // Manuf 
-                    (10 << 24) // DevType
-            );
+            identifier = std::bit_cast<uint32_t>(header); // convert struct to uint32_t
 
             // Check if mode is not valid 
 
