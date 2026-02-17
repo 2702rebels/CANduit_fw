@@ -28,6 +28,7 @@ public:
     int id; // What GPIO it represents, 0,1,2,3 ... etc.
     uint8_t mode; // The current mode as represented by the GPIOMode struct
     bool readOnly;
+    uint32_t outValue;
 
     void reset();
     void setMode(int id);
@@ -46,6 +47,6 @@ void PWMSetup();
 extern volatile uint32_t period[8];
 extern volatile uint32_t highTime[8];
 extern volatile uint32_t lowTime[8];
-
+extern volatile uint32_t samplePeriod;
 
 #endif

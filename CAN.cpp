@@ -2,6 +2,8 @@
 #include "CAN.h"
 #include "device.h"
 #include "api.h"
+#include "freertos/task.h"
+#include "bitset"
 
 
 void handle_twai_message(twai_message_t message){
@@ -32,18 +34,14 @@ void handle_twai_message(twai_message_t message){
     if (header.devType != 10 || header.manuf != 8 || header.devNum != deviceID) return;
    
 
-    //Serial.printf("\nMessage passed | class: %d, index: %d, rtr %d  data[0] %d\n", header.apiClass, header.apiIndex, message.rtr, message.data[0]);
-
-
-    //Serial.printf("rxId : 0x%x\n", rxId);
-    // Handle RTR frames
+    // Handle RTR frames, where we treat RTR as config
     if (message.rtr) {
-        if (header.apiClass < std::size(readFuncArray)){
+        if (header.apiClass < std::size(confFuncArray)){
             
-            if (readFuncArray[header.apiClass] != nullptr) { // If the read is implemented
+            if (confFuncArray[header.apiClass] != nullptr) { // If the read is implemented
                 //Serial.printf("Passing header with apiIndex %d", header.apiIndex);
-                uint32_t response = readFuncArray[header.apiClass](header); // PHIL - what happens if apiClass goes past the end of the array?
-                send_rtr_reply(message.identifier, message.data_length_code, get_message_from_int(response));
+                uint32_t response = confFuncArray[header.apiClass](header); // PHIL - what happens if apiClass goes past the end of the array?
+                send_data_frame(message.identifier, message.data_length_code, pack_data(response));
 		//send_rtr_reply(message.identifier, 1, 0xAA);
             } else{
                 Serial.println("Bad class");
@@ -59,10 +57,27 @@ void handle_twai_message(twai_message_t message){
             if (writeFuncArray[header.apiClass] != nullptr) // If the read is implemented
                 writeFuncArray[header.apiClass](header, &message.data);
         } else {
-            Serial.println("bad Class");
+            Serial.printf("bad Class %d\n", header.apiClass);
         }
     }
     //Serial.printf("\nPost Message passed | class: %d, index: %d, rtr %d  data[0] %d\n", header.apiClass, header.apiIndex, message.rtr, message.data[0]);
+}
+
+// runs on a task, handles the constant broadcasts
+void broadcastHandler(void *pvParameters) {
+    while (1) {
+        for (broadcastOperation bcast : broadcastFuncArray){
+            bcast();
+        }
+        delay(broadcastPeriod);
+    }
+}
+
+uint32_t broadcastPeriod = 20;
+
+void setupBroadcast(){
+    TaskHandle_t broadcast_task;
+    xTaskCreate(broadcastHandler, "BROADCASTHANDLE",4096,NULL,0, &broadcast_task);
 }
 
 
@@ -72,7 +87,7 @@ void handle_twai_message(twai_message_t message){
  * @param endByte inclusive ending byte
  */
 
-uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
+uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte){
     if (startByte < 0 || endByte >= 8 || endByte-startByte >= 4){
         Serial.print("Attempted to retrieve non-existant bytes from message");
         return 0;
@@ -88,28 +103,58 @@ uint32_t get_int_from_message(uint8_t (*data)[8], int startByte, int endByte){
     return result;
 }
 
-/**@brief returns a little endian message containing a number up to 4 bytes.
+/**@brief packs a single integer into a uint8_t, length 8 array. Less versatile but easier to use and more efficient than the pack_data below
  * 
  */
-std::array<uint8_t,8> get_message_from_int(uint32_t dataInt) {
-    // function could be made more flexible, to perhaps support multiple arguments, but functions for our purposes
+std::array<uint8_t,8> pack_data(uint32_t dataInt) {
     std::array<uint8_t, 8> data{};
     for (int i = 0; i<4; i++){
-        uint8_t dataByte = dataInt & 0xFF;
-        data[i] = dataByte;
+        data[i] = (uint8_t) dataInt & 0xFF;
         dataInt >>= 8;
     }
 
     return data;
 }
 
-
-
-/** @brief sends an rtr reply in little endian
+/**Packs given data into a uint8_t, 8 length array, given a vector of numbers and bit sizes, where the two must be equal. Is untested.
  */
-void send_rtr_reply(uint32_t rtrID, int DLC, std::array<uint8_t,8> data){
+std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes){
+    std::array<uint8_t,8> packedData = {};
+
+    int arrSize = std::size(data);
+
+    if (arrSize != std::size(bitSizes)) {
+        Serial.println("Attempted to pack data with extra datapoints in either the data or the bitSizes");
+        return packedData;
+    };
+
+    // Store bits in bitset;
+    long bs;
+    int totalSize = 0;
+    for (int idx = 0; idx < arrSize;idx++){
+        bs |= (
+                (long) (data[idx] & ((1ULL << bitSizes[idx])-1))
+                ) << totalSize;
+        totalSize += bitSizes[idx];
+    }
+
+    //Convert bitset byte by byte to array
+    long mask = 0xFF;
+    for (int idx = 0; idx < 8;idx++){
+        packedData[idx] = bs & mask;
+        bs >>= 8;
+    }
+
+    return packedData;
+}
+
+
+// sends a CAN message with a header.
+void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data){
+    
+    
     twai_message_t tx_msg;
-    tx_msg.identifier = rtrID;      // Match the requested ID
+    tx_msg.identifier = identifier;      // Match the requested ID
     tx_msg.extd = 1;            // 0 for Standard, 1 for Extended (FRC is extended?)
     tx_msg.rtr = 0;             // MUST be 0 to send actual data
     tx_msg.data_length_code = DLC; // Number of bytes to send - should match the request
@@ -119,8 +164,6 @@ void send_rtr_reply(uint32_t rtrID, int DLC, std::array<uint8_t,8> data){
 
     esp_err_t rval = twai_transmit(&tx_msg, pdMS_TO_TICKS(POLLING_RATE_MS));
     if (rval != ESP_OK) {
-      Serial.printf("Failed to send reply: 0x%x\n", rval);
+      Serial.printf("Failed to send message: 0x%x\n", rval);
     }
-    //else Serial.printf("Sent DLC: %d, data0: %d, rtrID: %x\n", DLC, data[0], rtrID);
-    
 }

@@ -8,6 +8,7 @@
 volatile uint32_t period[8];
 volatile uint32_t highTime[8];
 volatile uint32_t lowTime[8];
+volatile uint32_t samplePeriod = 100;
 
 #define RMT_RESOLUTION_HZ 10000000 // 80MHz for high precision (12.5ns per tick)
 #define IDLE_THRES_NS     2000000  // 2ms idle threshold (fits @ 10MHz)
@@ -77,12 +78,12 @@ void PWMTask(void *pvParameters) {
             }
 
             ESP_ERROR_CHECK(rmt_enable(rx_chan));
-	    delay(10); // PHIL - remove?
-            
-	    Serial.println("calling receive");
+            delay(10); // PHIL - remove?
+                
+            Serial.println("calling receive");
             esp_err_t ret = rmt_receive(rx_chan, syms, BUFFER_SIZE, &rx_cfg); // pass num symbols
             if (ret == ESP_OK) {
-                delay(100); //PHIL - use a shorter delay?
+                delay(2); //PHIL - use a shorter delay?
                     
                 // Stop the hardware immediately
                 rmt_disable(rx_chan);
@@ -122,6 +123,6 @@ void PWMTask(void *pvParameters) {
 	    rmt_del_channel(rx_chan);
 
 	} // for
-        delay(100); 
+        delay(samplePeriod); 
     } // while
 }

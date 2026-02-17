@@ -3,7 +3,9 @@
 #include "gpio.h"
 #include "CAN.h"
 #include "api.h"
-
+#include "device.h"
+#include "array"
+#include <bit>
 
 /////////////////////////////////
 // Define BROADCAST functions
@@ -52,7 +54,6 @@ void MODE_W(CANHeader header, uint8_t (*data)[8]){
 
 // Read modes
 uint32_t MODE_R(CANHeader header){
-    Serial.println("ohno"); 
     if (!inPorts(header.apiIndex)) return 0;
     
     Port *port = getGPIO(header.apiIndex);
@@ -77,64 +78,113 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
 
     int setting = (*data)[0];
     if (setting != 0 && setting != 1) return;
-    
+    port-> outValue = setting;    
     digitalWrite(GPIO[port->id], setting);
 }
 
-
-// Read modes
-uint32_t DIGITAL_STATE_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex);
-    
-    if (port->mode != GPIOMode.DIG_IN) return 0;
-
-    return digitalRead(GPIO[port->id]);
-}
-
-
-
-
 /////////////////////////////////
-// Define PWM INPUT functions
+// Define PERIOD CONFIG functions
 /////////////////////////////////
 
-// Period only has read mode
-// period, hightime, and lowtime are defined in gpio.h
+void CONFIG_W(CANHeader header, uint8_t (*data)[8]){
+    switch (header.apiIndex){
+        case 1:
+            broadcastPeriod = unpack_int(data,0,1);
+            break;
+        case 2:
+            samplePeriod = unpack_int(data,0,1);
+            break;
+    }
+}
 
+uint32_t CONFIG_R(CANHeader header){
 
-uint32_t PERIOD_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex);
-    
+    switch (header.apiIndex){
+        case 0: // broadcast period
+            return broadcastPeriod;
 
-    return period[port->id];
+        case 1: //pwm sample period
+            return samplePeriod;
+    }
+    return 0;
 }
 
 
 
-uint32_t HIGHTIME_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex); // Use array lookup? - PHIL
-    Serial.printf("Read high time %d from port %d\n", highTime[port->id], port->id);  
+////////////////////////////////////////
+// Define BROADCAST message transmitters
+////////////////////////////////////////
 
-    return highTime[port->id];
+void BROADCAST_STATUS(){
+        uint32_t identifier;
+
+
+        CANHeader header;
+        header.apiClass = 20;
+        header.apiIndex = 0;
+        header.devNum = deviceID;
+        header.devType = 10;
+        header.manuf = 8;
+
+        identifier = std::bit_cast<uint32_t>(header); // convert struct to uint32_t
+
+        
+        std::array<uint8_t,8> data = {};
+
+        // fill first byte
+        for (int g = 7; g>=0;g--){
+            if (!inPorts(g)) continue;
+        
+            Port *port = getGPIO(g);
+            
+            data[0] <<= 1;
+            if (port->mode == GPIOMode.DIG_IN){
+                data[0] |= digitalRead(GPIO[port->id]);
+            
+            } else if (port->mode == GPIOMode.DIG_OUT){
+                data[0] |= port->outValue;
+            }
+        }
+        
+        // the bitmask of internal state and error flags has yet to be determined
+        
+
+
+        send_data_frame(identifier,4,data);
 }
 
 
+void BROADCAST_PWM_TIMES(){
+        uint32_t identifier;
+        CANHeader header;
 
-uint32_t LOWTIME_R(CANHeader header){
-    
-    if (!inPorts(header.apiIndex)) return 0;
-    
-    Port *port = getGPIO(header.apiIndex);
-    
+        std::vector<uint32_t> bitSizes = {32,32};
 
-    return lowTime[port->id];
+
+        for (int g = 0; g< 8; g++){ // on message per port
+            
+            Port *port = getGPIO(g);
+            if (port->mode != GPIOMode.PWM_IN) {
+                continue;
+            }
+
+            header.apiClass = 21;
+            header.apiIndex = g;
+            header.devNum = deviceID;
+            header.devType = 10;
+            header.manuf = 8;
+
+            identifier = std::bit_cast<uint32_t>(header); // convert struct to uint32_t
+
+            // Check if mode is not valid 
+
+            std::vector<uint32_t> datapoints = {
+                highTime[g], period[g]
+            };
+
+            std::array<uint8_t,8> data = pack_data(datapoints, bitSizes);
+                        
+            
+            send_data_frame(identifier,8,data);
+        }
 }
