@@ -5,6 +5,7 @@
 
 
 void setup() {
+  
 
     Serial.begin(115200);
     delay(1000);
@@ -51,11 +52,11 @@ void setup() {
     
 
     preferences.begin("canduit",false);
+  
     deviceID = getDeviceID();
     preferences.end();
-    #if WIFI
-      captivePortalSetup();
-    #endif
+    captivePortalSetup();
+    
 }
 
 

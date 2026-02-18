@@ -14,7 +14,7 @@ void setDeviceID(int id);
 int getDeviceID();
 extern int deviceID;
 
-void captivePortalLoop(void *pvParameters);
+void captivePortalLoop();//void *pvParameters);
 void captivePortalSetup();
 
 
