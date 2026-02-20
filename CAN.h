@@ -38,20 +38,13 @@ constexpr struct [[gnu::packed]] {
 
 extern uint32_t broadcastPeriod;
 
-void setupBroadcast(); 
-void handle_twai_message(twai_message_t);
-uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte);
-std::array<uint8_t,8> pack_data(uint32_t dataInt);
-void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data);
-std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes);
-
-
 /** Custom implementation of the ByteBuffer class from java for managing bits
  */
 class PackedBuffer{    
     
     public:
-        static PackedBuffer wrap(uint8_t (*data)[8]); 
+        static PackedBuffer wrap(uint8_t (*data)[8]);
+        static PackedBuffer wrap(unsigned long data, int bitlength);
         PackedBuffer();
 
         void putBits(int bits, int data);
@@ -67,7 +60,17 @@ class PackedBuffer{
     private:
         //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a long. Anything above should never be needed.
         long buf;
+
+        // Keeps track of the current index to add the lsb of a number to in the buffer
+        int cursor;
 };
+
+
+
+void setupBroadcast(); 
+void handle_twai_message(twai_message_t);
+void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* data);
+
 
 
 # endif

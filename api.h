@@ -4,26 +4,26 @@
 #include "CAN.h"
 #include "stdint.h"
 
-typedef void (*writeOperation)(CANHeader header, uint8_t (*data)[8]); 
-typedef uint32_t (*readOperation)(CANHeader header); 
+typedef void (*writeOperation)(CANHeader header, PackedBuffer* data); 
+typedef PackedBuffer (*readOperation)(CANHeader header); 
 typedef void (*broadcastOperation)();
 
 
 // Broadcast recieve 
-void BROADCAST_RECIEVE(CANHeader header, uint8_t (*data)[8]); // special case, goes under Writes
+void BROADCAST_RECIEVE(CANHeader header, PackedBuffer* data); // special case, goes under Writes
 
 // Broadcast sends
 void BROADCAST_STATUS();
 void BROADCAST_PWM_TIMES();
 
 // Define write operations
-void MODE_W(CANHeader header, uint8_t (*data)[8]);
-void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]);
-void CONFIG_W(CANHeader header, uint8_t (*data)[8]);
+void MODE_W(CANHeader header, PackedBuffer* data);
+void DIGITAL_STATE_W(CANHeader header, PackedBuffer* data);
+void CONFIG_W(CANHeader header, PackedBuffer* data);
 
 // Define read operations
-uint32_t MODE_R(CANHeader header);
-uint32_t CONFIG_R(CANHeader header);
+PackedBuffer MODE_R(CANHeader header);
+PackedBuffer CONFIG_R(CANHeader header);
 
 
 
