@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <stdint.h>
 #include "driver/twai.h"
-#include "array"
-#include "vector"
 
 #define POLLING_RATE_MS 100
 
@@ -37,10 +35,40 @@ constexpr struct [[gnu::packed]] {
 
 extern uint32_t broadcastPeriod;
 
+/** Custom implementation of the ByteBuffer class from java for managing bits
+ */
+class PackedBuffer{    
+    
+    public:
+        static PackedBuffer wrap(uint8_t (*data)[8]);
+        static PackedBuffer wrap(uint64_t data, int bitlength);
+        PackedBuffer();
+
+        void putBits(int bits, uint64_t data);
+        void putBool(bool val);
+        void putByte(uint8_t byte);
+        void putWord(uint32_t word);
+
+        uint64_t consumeBits(int bits);
+        bool consumeBool();
+        uint8_t consumeByte();
+        uint32_t consumeWord();        
+    private:
+        //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a int64_t. Anything above should never be needed.
+        uint64_t buf; 
+
+        // Keeps track of the current index to add the lsb of a number to in the buffer
+        int cur;
+
+};
+
+
+
+
+
 void setupBroadcast(); 
 void handle_twai_message(twai_message_t);
-uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte);
-std::array<uint8_t,8> pack_data(uint32_t dataInt);
-void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data);
-std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes);
+void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* data);
+
+
 # endif

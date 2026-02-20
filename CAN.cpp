@@ -3,7 +3,6 @@
 #include "device.h"
 #include "api.h"
 #include "freertos/task.h"
-#include "bitset"
 
 
 void handle_twai_message(twai_message_t message){
@@ -27,7 +26,9 @@ void handle_twai_message(twai_message_t message){
     if (header.devType == 0 && header.manuf == 0) 
     {
        Serial.println("Got broadcast");
-       writeFuncArray[0](header, &message.data);
+       PackedBuffer pbuf = PackedBuffer::wrap(&message.data);
+       writeFuncArray[0](header, &pbuf);
+       
     }
     
     // filter non-addressed messages
@@ -39,9 +40,9 @@ void handle_twai_message(twai_message_t message){
         if (header.apiClass < std::size(confFuncArray)){
             
             if (confFuncArray[header.apiClass] != nullptr) { // If the read is implemented
-                //Serial.printf("Passing header with apiIndex %d", header.apiIndex);
-                uint32_t response = confFuncArray[header.apiClass](header); // PHIL - what happens if apiClass goes past the end of the array?
-                send_data_frame(message.identifier, message.data_length_code, pack_data(response));
+                
+                PackedBuffer response = confFuncArray[header.apiClass](header);
+                send_data_frame(message.identifier, message.data_length_code, &response);
 		//send_rtr_reply(message.identifier, 1, 0xAA);
             } else{
                 Serial.println("Bad class");
@@ -52,10 +53,11 @@ void handle_twai_message(twai_message_t message){
     } 
     // Handle data frames
     else {
+        PackedBuffer pbuf = PackedBuffer::wrap(&message.data);
         if (header.apiClass < std::size(writeFuncArray)){ // Handle an apiClass goes past end of array
                                                            //
             if (writeFuncArray[header.apiClass] != nullptr) // If the read is implemented
-                writeFuncArray[header.apiClass](header, &message.data);
+                writeFuncArray[header.apiClass](header, &pbuf);
         } else {
             Serial.printf("bad Class %d\n", header.apiClass);
         }
@@ -81,76 +83,8 @@ void setupBroadcast(){
 }
 
 
-
-/** @brief given a little endian array, gets a uint32_t from a range of bytes, indexed at 0
- * @param startByte inclusive starting byte
- * @param endByte inclusive ending byte
- */
-
-uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte){
-    if (startByte < 0 || endByte >= 8 || endByte-startByte >= 4){
-        Serial.print("Attempted to retrieve non-existant bytes from message");
-        return 0;
-    }
-
-    uint32_t result = 0;
-    for (int i = endByte; i>=startByte;i--){ 
-        result <<= 8; 
-        result += (*data)[i]; 
-    }
-    
-
-    return result;
-}
-
-/**@brief packs a single integer into a uint8_t, length 8 array. Less versatile but easier to use and more efficient than the pack_data below
- * 
- */
-std::array<uint8_t,8> pack_data(uint32_t dataInt) {
-    std::array<uint8_t, 8> data{};
-    for (int i = 0; i<4; i++){
-        data[i] = (uint8_t) dataInt & 0xFF;
-        dataInt >>= 8;
-    }
-
-    return data;
-}
-
-/**Packs given data into a uint8_t, 8 length array, given a vector of numbers and bit sizes, where the two must be equal. Is untested.
- */
-std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes){
-    std::array<uint8_t,8> packedData = {};
-
-    int arrSize = std::size(data);
-
-    if (arrSize != std::size(bitSizes)) {
-        Serial.println("Attempted to pack data with extra datapoints in either the data or the bitSizes");
-        return packedData;
-    };
-
-    // Store bits in bitset;
-    long bs;
-    int totalSize = 0;
-    for (int idx = 0; idx < arrSize;idx++){
-        bs |= (
-                (long) (data[idx] & ((1ULL << bitSizes[idx])-1))
-                ) << totalSize;
-        totalSize += bitSizes[idx];
-    }
-
-    //Convert bitset byte by byte to array
-    long mask = 0xFF;
-    for (int idx = 0; idx < 8;idx++){
-        packedData[idx] = bs & mask;
-        bs >>= 8;
-    }
-
-    return packedData;
-}
-
-
 // sends a CAN message with a header.
-void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data){
+void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* pbuf){
     
     
     twai_message_t tx_msg;
@@ -159,11 +93,67 @@ void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8
     tx_msg.rtr = 0;             // MUST be 0 to send actual data
     tx_msg.data_length_code = DLC; // Number of bytes to send - should match the request
     for (int i = 0; i<DLC;i++) {
-        tx_msg.data[i] = data[i];
+        tx_msg.data[i] = pbuf->consumeByte();
     }
 
     esp_err_t rval = twai_transmit(&tx_msg, pdMS_TO_TICKS(POLLING_RATE_MS));
     if (rval != ESP_OK) {
       Serial.printf("Failed to send message: 0x%x\n", rval);
     }
+}
+
+
+/////////////////////////////////////
+// Define PackedBuffer implementation
+/////////////////////////////////////
+
+PackedBuffer::PackedBuffer(){buf = 0; cur=0;}
+
+
+void PackedBuffer::putBits(int bits, uint64_t data){
+    // Mask the data to the bits
+    data &= ((1UL << bits)-1);
+    // Add the data to the location of the cursor
+    buf |= (data << cur);
+    // Update cursor position
+    cur += bits;
+    
+}
+
+void PackedBuffer::putBool(bool val){
+    putBits(1,val);
+};
+
+void PackedBuffer::putByte(uint8_t byte){ putBits(8,byte); };
+void PackedBuffer::putWord(uint32_t word){ putBits(32,word); };
+
+uint64_t PackedBuffer::consumeBits(int bitlength){
+    uint64_t consumed = (buf & ((1UL << bitlength)-1));
+    buf >>= bitlength;
+    // adjust cursor
+    cur -= bitlength;
+    if (cur < 0) cur = 0;
+
+    return consumed;
+}
+
+bool PackedBuffer::consumeBool(){ return consumeBits(1); };
+uint8_t PackedBuffer::consumeByte(){ return consumeBits(8); };
+uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); }
+
+PackedBuffer PackedBuffer::wrap(uint8_t (*data)[8]){
+    PackedBuffer pbuf = PackedBuffer();
+
+    for (uint8_t byte : (*data)){
+        pbuf.putByte(byte);
+    }
+
+    return pbuf;
+};
+
+PackedBuffer PackedBuffer::wrap(uint64_t data, int bitlength){
+    PackedBuffer pbuf = PackedBuffer();
+    
+    pbuf.putBits(bitlength,data);
+    return pbuf;
 }

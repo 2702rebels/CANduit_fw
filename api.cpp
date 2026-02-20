@@ -14,7 +14,7 @@
 
 void disable();
 
-void BROADCAST_RECIEVE(CANHeader header, uint8_t (*data)[8]){
+void BROADCAST_RECIEVE(CANHeader header, PackedBuffer* data){
     
     switch (header.apiIndex){
         case 0:
@@ -41,24 +41,24 @@ void disable(){
 
 
 // Write port mode
-void MODE_W(CANHeader header, uint8_t (*data)[8]){
+void MODE_W(CANHeader header, PackedBuffer* data){
     // Header.apiIndex acts as the port ID
     if (!inPorts(header.apiIndex)) return;
     
     Port *port = getGPIO(header.apiIndex);
     
 
-    port->setMode((*data)[0]);
+    port->setMode(data->consumeByte());
 }
 
 
 // Read modes
-uint32_t MODE_R(CANHeader header){
-    if (!inPorts(header.apiIndex)) return 0;
+PackedBuffer MODE_R(CANHeader header){
+    if (!inPorts(header.apiIndex)) return PackedBuffer();
     
     Port *port = getGPIO(header.apiIndex);
     
-    return port->mode;
+    return PackedBuffer::wrap(port->mode,8);
 }
 
 /////////////////////////////////
@@ -66,7 +66,7 @@ uint32_t MODE_R(CANHeader header){
 /////////////////////////////////
 
 // Write port mode
-void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
+void DIGITAL_STATE_W(CANHeader header, PackedBuffer* data){
     // Header.apiIndex acts as the port I
     
     if (!inPorts(header.apiIndex)) return;
@@ -76,7 +76,7 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
     if (port->mode != GPIOMode.DIG_OUT) return;
 
 
-    int setting = (*data)[0];
+    int setting = data->consumeBool();
     if (setting != 0 && setting != 1) return;
     port-> outValue = setting;    
     digitalWrite(GPIO[port->id], setting);
@@ -86,27 +86,27 @@ void DIGITAL_STATE_W(CANHeader header, uint8_t (*data)[8]){
 // Define PERIOD CONFIG functions
 /////////////////////////////////
 
-void CONFIG_W(CANHeader header, uint8_t (*data)[8]){
+void CONFIG_W(CANHeader header, PackedBuffer* data){
     switch (header.apiIndex){
         case 1:
-            broadcastPeriod = unpack_int(data,0,1);
+            broadcastPeriod = data->consumeBits(16);
             break;
         case 2:
-            samplePeriod = unpack_int(data,0,1);
+            samplePeriod = data->consumeBits(16);
             break;
     }
 }
 
-uint32_t CONFIG_R(CANHeader header){
+PackedBuffer CONFIG_R(CANHeader header){
 
     switch (header.apiIndex){
         case 0: // broadcast period
-            return broadcastPeriod;
+            return PackedBuffer::wrap(broadcastPeriod,16);
 
         case 1: //pwm sample period
-            return samplePeriod;
+            return PackedBuffer::wrap(samplePeriod,16);
     }
-    return 0;
+    return PackedBuffer();
 }
 
 
@@ -129,20 +129,20 @@ void BROADCAST_STATUS(){
         identifier = std::bit_cast<uint32_t>(header); // convert struct to uint32_t
 
         
-        std::array<uint8_t,8> data = {};
+        PackedBuffer data = PackedBuffer();
 
         // fill first byte
-        for (int g = 7; g>=0;g--){
+        for (int g = 0; g<8;g++){
             if (!inPorts(g)) continue;
         
             Port *port = getGPIO(g);
             
-            data[0] <<= 1;
+            
             if (port->mode == GPIOMode.DIG_IN){
-                data[0] |= digitalRead(GPIO[port->id]);
+                data.putBool(digitalRead(GPIO[port->id]));
             
             } else if (port->mode == GPIOMode.DIG_OUT){
-                data[0] |= port->outValue;
+                data.putBool(port->outValue);
             }
         }
         
@@ -150,16 +150,13 @@ void BROADCAST_STATUS(){
         
 
 
-        send_data_frame(identifier,4,data);
+        send_data_frame(identifier,4,&data);
 }
 
 
 void BROADCAST_PWM_TIMES(){
         uint32_t identifier;
         CANHeader header;
-
-        std::vector<uint32_t> bitSizes = {32,32};
-
 
         for (int g = 0; g< 8; g++){ // on message per port
             
@@ -178,13 +175,10 @@ void BROADCAST_PWM_TIMES(){
 
             // Check if mode is not valid 
 
-            std::vector<uint32_t> datapoints = {
-                highTime[g], period[g]
-            };
-
-            std::array<uint8_t,8> data = pack_data(datapoints, bitSizes);
-                        
+            PackedBuffer data = PackedBuffer();
+            data.putWord(highTime[g]);
+            data.putWord(period[g]);
             
-            send_data_frame(identifier,8,data);
+            send_data_frame(identifier,8,&data);
         }
 }
