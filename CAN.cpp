@@ -130,7 +130,7 @@ void PackedBuffer::putWord(uint32_t word){ putBits(32,word); };
 
 unsigned int PackedBuffer::consumeBits(int bits){
     int consumed = buf | ((1UL << bits)-1);
-    buf >> bits;
+    buf >>= bits;
     
     // adjust cursor
     cursor -= bits;
