@@ -174,19 +174,6 @@ class PackedBuffer{
     public:
         static PackedBuffer wrap(uint8_t (*data)[]); 
         static PackedBuffer wrap(std::vector<uint8_t> data);
-
-        void putBits(int bits, int data);
-        void putBool(bool val);
-        void putByte(uint8_t byte);
-        void putWord(uint32_t word);
-
-        unsigned int consumeBits(int bits);
-        bool consumeBool();
-        uint8_t consumeByte();
-        uint32_t consumeWord();
-        
-    private:
-        std::bitset<64> buf; // We only need a bitset of 64 for this implementation, so it stays capped there. Anything above should never be needed.
 };*/
 
 PackedBuffer::PackedBuffer(){buf = 0;}
@@ -212,6 +199,15 @@ unsigned int PackedBuffer::consumeBits(int bits){
 
 bool PackedBuffer::consumeBool(){ return consumeBits(1); };
 uint8_t PackedBuffer::consumeByte(){ return consumeBits(8); };
-uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); };
+uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); }
 
+PackedBuffer PackedBuffer::wrap(uint8_t (*data)[8]){
+    PackedBuffer pbuf = PackedBuffer();
+
+    for (uint8_t byte : (*data)){
+        pbuf.putByte(byte);
+    }
+
+    return pbuf;
+};
 

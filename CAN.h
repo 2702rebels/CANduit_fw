@@ -51,8 +51,7 @@ std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t
 class PackedBuffer{    
     
     public:
-        static PackedBuffer wrap(uint8_t (*data)[]); 
-        static PackedBuffer wrap(std::vector<uint8_t> data);
+        static PackedBuffer wrap(uint8_t (*data)[8]); 
         PackedBuffer();
 
         void putBits(int bits, int data);
@@ -64,7 +63,7 @@ class PackedBuffer{
         bool consumeBool();
         uint8_t consumeByte();
         uint32_t consumeWord();
-        
+ 
     private:
         //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a long. Anything above should never be needed.
         long buf;
