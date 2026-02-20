@@ -4,9 +4,6 @@
 #include <cstdint>
 #include <stdint.h>
 #include "driver/twai.h"
-#include "array"
-#include "vector"
-#include "bitset"
 
 #define POLLING_RATE_MS 100
 
@@ -44,33 +41,34 @@ class PackedBuffer{
     
     public:
         static PackedBuffer wrap(uint8_t (*data)[8]);
-        static PackedBuffer wrap(unsigned long data, int bitlength);
+        static PackedBuffer wrap(uint64_t data, int bitlength);
         PackedBuffer();
 
-        void putBits(int bits, int data);
+        void putBits(int bits, uint64_t data);
         void putBool(bool val);
         void putByte(uint8_t byte);
         void putWord(uint32_t word);
 
-        unsigned int consumeBits(int bits);
+        uint64_t consumeBits(int bits);
         bool consumeBool();
         uint8_t consumeByte();
-        uint32_t consumeWord();
- 
+        uint32_t consumeWord();        
     private:
-        //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a long. Anything above should never be needed.
-        long buf;
+        //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a int64_t. Anything above should never be needed.
+        uint64_t buf; 
 
         // Keeps track of the current index to add the lsb of a number to in the buffer
-        int cursor;
+        int cur;
+
 };
+
+
 
 
 
 void setupBroadcast(); 
 void handle_twai_message(twai_message_t);
 void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* data);
-
 
 
 # endif

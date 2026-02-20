@@ -14,7 +14,7 @@
 
 void disable();
 
-void BROADCAST_RECIEVE(CANHeader header, PackedBuffer data){
+void BROADCAST_RECIEVE(CANHeader header, PackedBuffer* data){
     
     switch (header.apiIndex){
         case 0:

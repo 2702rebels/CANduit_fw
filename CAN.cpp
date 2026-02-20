@@ -3,7 +3,6 @@
 #include "device.h"
 #include "api.h"
 #include "freertos/task.h"
-#include "bitset"
 
 
 void handle_twai_message(twai_message_t message){
@@ -108,16 +107,16 @@ void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* pbuf){
 // Define PackedBuffer implementation
 /////////////////////////////////////
 
-PackedBuffer::PackedBuffer(){buf = 0;}
+PackedBuffer::PackedBuffer(){buf = 0; cur=0;}
 
 
-void PackedBuffer::putBits(int bits, int data){
+void PackedBuffer::putBits(int bits, uint64_t data){
     // Mask the data to the bits
-    data &= (1UL << bits)-1;
+    data &= ((1UL << bits)-1);
     // Add the data to the location of the cursor
-    buf |= data << cursor;
+    buf |= (data << cur);
     // Update cursor position
-    cursor += bits;
+    cur += bits;
     
 }
 
@@ -128,13 +127,12 @@ void PackedBuffer::putBool(bool val){
 void PackedBuffer::putByte(uint8_t byte){ putBits(8,byte); };
 void PackedBuffer::putWord(uint32_t word){ putBits(32,word); };
 
-unsigned int PackedBuffer::consumeBits(int bits){
-    int consumed = buf | ((1UL << bits)-1);
-    buf >>= bits;
-    
+uint64_t PackedBuffer::consumeBits(int bitlength){
+    uint64_t consumed = (buf & ((1UL << bitlength)-1));
+    buf >>= bitlength;
     // adjust cursor
-    cursor -= bits;
-    if (cursor < 0) cursor = 0;
+    cur -= bitlength;
+    if (cur < 0) cur = 0;
 
     return consumed;
 }
@@ -153,7 +151,7 @@ PackedBuffer PackedBuffer::wrap(uint8_t (*data)[8]){
     return pbuf;
 };
 
-PackedBuffer PackedBuffer::wrap(unsigned long data, int bitlength){
+PackedBuffer PackedBuffer::wrap(uint64_t data, int bitlength){
     PackedBuffer pbuf = PackedBuffer();
     
     pbuf.putBits(bitlength,data);
