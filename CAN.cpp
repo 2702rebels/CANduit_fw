@@ -148,7 +148,6 @@ std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t
     return packedData;
 }
 
-
 // sends a CAN message with a header.
 void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data){
     
@@ -167,3 +166,52 @@ void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8
       Serial.printf("Failed to send message: 0x%x\n", rval);
     }
 }
+
+
+/*
+class PackedBuffer{    
+    
+    public:
+        static PackedBuffer wrap(uint8_t (*data)[]); 
+        static PackedBuffer wrap(std::vector<uint8_t> data);
+
+        void putBits(int bits, int data);
+        void putBool(bool val);
+        void putByte(uint8_t byte);
+        void putWord(uint32_t word);
+
+        unsigned int consumeBits(int bits);
+        bool consumeBool();
+        uint8_t consumeByte();
+        uint32_t consumeWord();
+        
+    private:
+        std::bitset<64> buf; // We only need a bitset of 64 for this implementation, so it stays capped there. Anything above should never be needed.
+};*/
+
+PackedBuffer::PackedBuffer(){buf = 0;}
+
+
+void PackedBuffer::putBits(int bits, int data){
+    buf << bits;
+    buf |= data & ((1UL << bits)-1);
+}
+
+void PackedBuffer::putBool(bool val){
+    putBits(1,val);
+};
+
+void PackedBuffer::putByte(uint8_t byte){ putBits(8,byte); };
+void PackedBuffer::putWord(uint32_t word){ putBits(32,word); };
+
+unsigned int PackedBuffer::consumeBits(int bits){
+    int consumed = buf | ((1UL << bits)-1);
+    buf >> bits;
+    return consumed;
+}
+
+bool PackedBuffer::consumeBool(){ return consumeBits(1); };
+uint8_t PackedBuffer::consumeByte(){ return consumeBits(8); };
+uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); };
+
+
