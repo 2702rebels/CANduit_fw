@@ -1,8 +1,6 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#define WIFI false 
-
 
 #include "Preferences.h"
 
@@ -14,7 +12,7 @@ void setDeviceID(int id);
 int getDeviceID();
 extern int deviceID;
 
-void captivePortalLoop(void *pvParameters);
+void captivePortalLoop();
 void captivePortalSetup();
 
 
