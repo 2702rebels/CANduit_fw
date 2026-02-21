@@ -142,7 +142,7 @@ uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); }
 
 
 
-//Unloads the buffer to a byte array using memcpy
+//Unloads the buffer to a byte array WITHOUT consuming the buffer
 void PackedBuffer::unloadToBytes(uint8_t (*data)[DATA_BYTES_COUNT], int DLC){
     // unloads the first DLC bytes into the array
     memcpy(data,&buf,DLC);  
