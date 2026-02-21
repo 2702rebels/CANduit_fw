@@ -29,7 +29,8 @@ int getDeviceID(){
     int deviceNum = preferences.getInt("deviceNum",0);
     
     preferences.end();
-    return deviceNum;
+    //return deviceNum;
+    return(4);
 }
 
 int deviceID = getDeviceID();

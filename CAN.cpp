@@ -65,6 +65,7 @@ void handle_twai_message(twai_message_t message){
 
 // runs on a task, handles the constant broadcasts
 void broadcastHandler(void *pvParameters) {
+    Serial.println("In broadcast handler");
     while (1) {
         for (broadcastOperation bcast : broadcastFuncArray){
             bcast();
@@ -108,16 +109,35 @@ uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte){
  */
 std::array<uint8_t,8> pack_data(uint32_t dataInt) {
     std::array<uint8_t, 8> data{};
+    // Since you're on an ESP32 (which is natively little-endian), you can use memcpy 
+    // for a significant speed boost over a loop with bit-shifting - PHIL
     for (int i = 0; i<4; i++){
-        data[i] = (uint8_t) dataInt & 0xFF;
+        data[i] = (uint8_t) (dataInt & 0xFF);
         dataInt >>= 8;
     }
 
     return data;
 }
 
+/**@brief packs two integers into a uint8_t, length 8 array. Less versatile but easier to use and more efficient than the pack_data below
+ * 
+ */
+std::array<uint8_t,8> pack_data(uint32_t dataInt0, uint32_t dataInt1){
+    std::array<uint8_t,8> packedData = {};
+
+    // Because the ESP32 is natively little-endian, packing data into a byte 
+    // array using standard C/C++ memory operations like memcpy will automatically 
+    // result in a little-endian byte sequence. 
+    memcpy(packedData.data(), &dataInt0, 4);
+    memcpy(packedData.data() + 4, &dataInt1, 4);
+    return packedData;
+}
+
+
+#if 0
 /**Packs given data into a uint8_t, 8 length array, given a vector of numbers and bit sizes, where the two must be equal. Is untested.
  */
+ // Replace 8 with #define - PHIL
 std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes){
     std::array<uint8_t,8> packedData = {};
 
@@ -129,7 +149,7 @@ std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t
     };
 
     // Store bits in bitset;
-    long bs;
+    long bs = 0; // This assumes that long is 64 bits?  You need long long for that
     int totalSize = 0;
     for (int idx = 0; idx < arrSize;idx++){
         bs |= (
@@ -144,10 +164,9 @@ std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t
         packedData[idx] = bs & mask;
         bs >>= 8;
     }
-
     return packedData;
 }
-
+#endif
 
 // sends a CAN message with a header.
 void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data){

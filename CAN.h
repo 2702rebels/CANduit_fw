@@ -19,7 +19,7 @@
 #define DEVICE_TYPE 10;
 
 struct [[gnu::packed]] CANHeader {
-    uint32_t devNum:5;
+    uint32_t devNum:6;
     uint32_t apiIndex:4;
     uint32_t apiClass:6;
     uint32_t manuf:8;
@@ -41,6 +41,7 @@ void setupBroadcast();
 void handle_twai_message(twai_message_t);
 uint32_t unpack_int(uint8_t (*data)[8], int startByte, int endByte);
 std::array<uint8_t,8> pack_data(uint32_t dataInt);
+std::array<uint8_t,8> pack_data(uint32_t dataInt0, uint32_t dataInt1);
 void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8> data);
-std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes);
+//std::array<uint8_t,8> pack_data(std::vector<uint32_t> data, std::vector<uint32_t> bitSizes);
 # endif

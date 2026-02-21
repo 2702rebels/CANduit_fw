@@ -117,15 +117,16 @@ uint32_t CONFIG_R(CANHeader header){
 
 void BROADCAST_STATUS(){
         uint32_t identifier;
+        static int count = 0;
 
-
+        
         CANHeader header;
         header.apiClass = 20;
         header.apiIndex = 0;
         header.devNum = deviceID;
         header.devType = 10;
         header.manuf = 8;
-
+        
         identifier = std::bit_cast<uint32_t>(header); // convert struct to uint32_t
 
         
@@ -147,9 +148,11 @@ void BROADCAST_STATUS(){
         }
         
         // the bitmask of internal state and error flags has yet to be determined
-        
-
-
+        if ((count %51) == 0) 
+        {
+            Serial.printf("Broadcast Status header 0x%x with data[0]=0x%x\n", header, data[0]);
+        }
+        count++;
         send_data_frame(identifier,4,data);
 }
 
@@ -157,9 +160,10 @@ void BROADCAST_STATUS(){
 void BROADCAST_PWM_TIMES(){
         uint32_t identifier;
         CANHeader header;
+        static int count = 0;
 
-        std::vector<uint32_t> bitSizes = {32,32};
-
+        //std::vector<uint32_t> bitSizes = {32,32};
+        
 
         for (int g = 0; g< 8; g++){ // on message per port
             
@@ -178,13 +182,20 @@ void BROADCAST_PWM_TIMES(){
 
             // Check if mode is not valid 
 
-            std::vector<uint32_t> datapoints = {
-                highTime[g], period[g]
-            };
+            //std::vector<uint32_t> datapoints = {
+            //    highTime[g], period[g]
+            //};
 
-            std::array<uint8_t,8> data = pack_data(datapoints, bitSizes);
+            std::array<uint8_t,8> data = pack_data(highTime[g], period[g]);
                         
-            
-            send_data_frame(identifier,8,data);
+            if ((count %51) == 0) 
+            {
+                Serial.printf("Broadcast header 0x%x\n", header), 
+                Serial.printf("Broadcast PWM gpio %d  high %d usec,  period %d usec\n", g, highTime[g]/1000, period[g]/1000);
+                Serial.printf("Broadcast payload %x %x %x %x %x %x %x %x\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+            }
+            //if (g==6) count++;
+            count++;
+            send_data_frame(identifier, 8, data);
         }
 }
