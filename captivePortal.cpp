@@ -29,8 +29,8 @@ int getDeviceID(){
     int deviceNum = preferences.getInt("deviceNum",0);
     
     preferences.end();
-    //return deviceNum;
-    return(4);
+    return deviceNum;
+    //return(4); // PHIL - hack to force dev id 4
 }
 
 int deviceID = getDeviceID();
@@ -47,7 +47,13 @@ const char* AP_PASS = "";  // open network
 IPAddress apIP(192, 168, 4, 1);
 IPAddress netMsk(255, 255, 255, 0);
 
-const byte DNS_PORT = 53;
+const byte DNS_PORT = 53;   // PHIL - clean this up to use consitent constant notation and group together
+#define WiFi_Switch_Pin 41
+static int switch_status = 0;  // PHIL - clean up globals to use consistent notation and group together
+
+#define Blue_LED 42
+
+bool portalDone = false;
 
 // ================== GLOBAL OBJECTS ==================
 WebServer server(80);
@@ -181,12 +187,27 @@ void handleUserIDInput() {
   statusMessage = "Device ID set successfully";
 
   server.send(200, "text/html", buildHTMLPage());
+  Serial.print("Portal was set! Turning WiFi off");
+  portalDone = true;
 }
 
 // ================== SETUP ==================
 
 void captivePortalSetup() {
-  Serial.println("===== Captive Portal Boot =====");
+  Serial.println("===== Captive Portal Setup =====");
+
+  pinMode(WiFi_Switch_Pin, INPUT_PULLUP);
+  pinMode(Blue_LED, OUTPUT);
+
+  switch_status = digitalRead(WiFi_Switch_Pin);
+
+  if (switch_status == LOW){
+    digitalWrite(Blue_LED, LOW);
+    Serial.println("Wifi switch is currently off - skip captive portal");
+    return;
+  } 
+  digitalWrite(Blue_LED, HIGH);
+  Serial.println("Wifi switch is currently on - open captive portal to set Device ID");
 
   // ---- LOAD STORED DEVICE ID ----
   deviceID = getDeviceID();
@@ -247,20 +268,20 @@ void captivePortalSetup() {
 
   server.begin();
     
-
-    TaskHandle_t portal_task;
-    xTaskCreate(captivePortalLoop, "PWMTask",4096,NULL,0, &portal_task);
-
-    Serial.println("Launched Captive portal event thread");
-    // We never need to close the thread as we want it to stay open as long as the canduit runs
+  captivePortalLoop();
+  Serial.println("Captive portal is done");
 }
 
 // ================== LOOP ==================
 
-void captivePortalLoop(void *pvParameters) {
-    while (1) {
+void captivePortalLoop() {
+    while (!portalDone) {
       dnsServer.processNextRequest();
       server.handleClient();
       delay(100);
-    }
+      //Serial.println("Webpage is up and running");
+    } 
+    digitalWrite(Blue_LED, LOW);
+    Serial.println("Disconnecting portal...");
+    WiFi.softAPdisconnect(true);
 }

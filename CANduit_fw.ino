@@ -52,21 +52,14 @@ void setup() {
       return;
     }
 
-
-
     // TWAI driver is now successfully installed and started
     Serial.println("CAN is good to go");
     
-    
-
     preferences.begin("canduit",false);
     deviceID = getDeviceID();
     preferences.end();
-    #if WIFI
-      captivePortalSetup();
-    #endif
-
-    
+    captivePortalSetup();
+ 
     setupBroadcast();
     Serial.println("Constant CAN broadcasts initialized");
     Serial.printf("Using deviceID %d\n", deviceID);
@@ -74,7 +67,8 @@ void setup() {
 
 
 void loop() {
- 
+  static int last_err = 0;
+
   // may refactor twai stuff to dedicated file but for now this is good
   uint32_t alerts_triggered;
   twai_read_alerts(&alerts_triggered, pdMS_TO_TICKS(POLLING_RATE_MS));
@@ -85,19 +79,22 @@ void loop() {
   if (alerts_triggered & TWAI_ALERT_ERR_PASS) {
     Serial.println("Alert: TWAI controller has become error passive.");
   }
-      if (alerts_triggered & TWAI_ALERT_BUS_ERROR) {
-      //Serial.println("Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
+  if (alerts_triggered & TWAI_ALERT_BUS_ERROR) {
+    //Serial.println("Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
+    if ((millis() - last_err) > 500) {
       Serial.printf("Bus error count: %d\n", twaistatus.bus_error_count);
-      Serial.flush();
+      last_err = millis();
     }
-    if (alerts_triggered & TWAI_ALERT_RX_QUEUE_FULL) {
-      //Serial.println("Alert: The RX queue is full causing a received frame to be lost.");
-      //Serial.flush();
-      
-      //Serial.printf("RX buffered: %d\t", twaistatus.msgs_to_rx);
-      //Serial.printf("RX missed: %d\t", twaistatus.rx_missed_count);
-      //Serial.printf("RX overrun %d\n", twaistatus.rx_overrun_count);
-    }
+    Serial.flush();
+  }
+  if (alerts_triggered & TWAI_ALERT_RX_QUEUE_FULL) {
+    //Serial.println("Alert: The RX queue is full causing a received frame to be lost.");
+    //Serial.flush();
+    
+    //Serial.printf("RX buffered: %d\t", twaistatus.msgs_to_rx);
+    //Serial.printf("RX missed: %d\t", twaistatus.rx_missed_count);
+    //Serial.printf("RX overrun %d\n", twaistatus.rx_overrun_count);
+  }
 
   // Check if message is received
   if (alerts_triggered & TWAI_ALERT_RX_DATA) {
