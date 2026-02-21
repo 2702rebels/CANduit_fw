@@ -92,9 +92,8 @@ void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* pbuf){
     tx_msg.extd = 1;            // 0 for Standard, 1 for Extended (FRC is extended?)
     tx_msg.rtr = 0;             // MUST be 0 to send actual data
     tx_msg.data_length_code = DLC; // Number of bytes to send - should match the request
-    for (int i = 0; i<DLC;i++) {
-        tx_msg.data[i] = pbuf->consumeByte();
-    }
+    // unloads the first DLC bytes of the packedbuf into tx_msg
+    pbuf->unloadToBytes(&tx_msg.data, DLC);
 
     esp_err_t rval = twai_transmit(&tx_msg, pdMS_TO_TICKS(POLLING_RATE_MS));
     if (rval != ESP_OK) {
@@ -140,6 +139,17 @@ unsigned long long PackedBuffer::consumeBits(int bitlength){
 bool PackedBuffer::consumeBool(){ return consumeBits(1); };
 uint8_t PackedBuffer::consumeByte(){ return consumeBits(8); };
 uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); }
+
+
+
+//Unloads the buffer to a byte array using memcpy
+void PackedBuffer::unloadToBytes(uint8_t (*data)[DATA_BYTES_COUNT], int DLC){
+    // unloads the first DLC bytes into the array
+    memcpy(data,&buf,DLC);  
+}
+
+
+
 
 PackedBuffer PackedBuffer::wrap(uint8_t (*data)[DATA_BYTES_COUNT]){
     PackedBuffer pbuf = PackedBuffer();

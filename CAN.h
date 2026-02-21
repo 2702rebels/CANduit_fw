@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <stdint.h>
 #include "driver/twai.h"
+#include "array";
 
 #define POLLING_RATE_MS 100
 
@@ -54,7 +55,8 @@ class PackedBuffer{
         unsigned long long consumeBits(int bits);
         bool consumeBool();
         uint8_t consumeByte();
-        uint32_t consumeWord();        
+        uint32_t consumeWord();
+        void unloadToBytes(uint8_t (*data)[DATA_BYTES_COUNT], int DLC);
     private:
         //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a int64_t. Anything above should never be needed.
         unsigned long long buf; 
