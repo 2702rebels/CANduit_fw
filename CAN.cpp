@@ -153,10 +153,8 @@ void PackedBuffer::unloadToBytes(uint8_t (*data)[DATA_BYTES_COUNT], int DLC){
 
 PackedBuffer PackedBuffer::wrap(uint8_t (*data)[DATA_BYTES_COUNT]){
     PackedBuffer pbuf = PackedBuffer();
-
-    for (uint8_t byte : (*data)){
-        pbuf.putByte(byte);
-    }
+    
+    memcpy(&pbuf.buf,data,sizeof(*data));
 
     return pbuf;
 };
