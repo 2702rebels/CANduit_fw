@@ -59,7 +59,7 @@ void Port::setMode(int _mode){
 Port ports[portsCount];
 
 void setupGPIO(){
-    for (int g = 0;g<portsCount;g++){
+    for (int g = 0;g<portsCount;g++) {
         Port newPort;
         newPort.id = g;
         newPort.mode = GPIOMode.UNASSIGNED;
@@ -67,13 +67,13 @@ void setupGPIO(){
         newPort.outValue = 0;
 
         ports[g] = newPort; 
-        pinMode(GPIO[g], INPUT); // PHIL default to input
+        pinMode(GPIO[g], INPUT); // default to input
         //pinMode(GPIO[g],OUTPUT);
         //digitalWrite(GPIO[g],LOW);
 
         pinMode(PWR[g],OUTPUT);
         pinMode(DIR[g],OUTPUT);
-        digitalWrite(PWR[g],LOW); // PHIL change back to low
+        digitalWrite(PWR[g],LOW);
         digitalWrite(DIR[g],LOW); // Input by default
     }
 }

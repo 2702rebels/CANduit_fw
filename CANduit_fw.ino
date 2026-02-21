@@ -13,6 +13,15 @@ void setup() {
     Serial.println("Calling PWMSetup");
     PWMSetup();
 
+#if 0
+    // PHIL - hack to enable PWM in on port 2
+    Port *port = getGPIO(2);
+    port->setMode(3);
+
+    port = getGPIO(6);
+    port->setMode(3);
+#endif
+
     // setup TWAI
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)TX_PIN, (gpio_num_t)RX_PIN, TWAI_MODE_NORMAL);
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS(); 
@@ -60,6 +69,7 @@ void setup() {
     
     setupBroadcast();
     Serial.println("Constant CAN broadcasts initialized");
+    Serial.printf("Using deviceID %d\n", deviceID);
 }
 
 

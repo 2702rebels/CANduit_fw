@@ -40,6 +40,5 @@ void loop() {
     Serial.printf("%d, ", a);
 
   }
-  delay(50);
-
+  delay(100);
 }

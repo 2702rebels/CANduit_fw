@@ -4,125 +4,154 @@
 #include "driver/rmt_rx.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "driver/mcpwm_cap.h"
+#include "hal/mcpwm_ll.h"
 
-volatile uint32_t period[8];
+//#define NSEC_PER_TICK       (1000/80)  /* 80MHz clock*/
+
+volatile uint32_t period[8];   // Why are these volatile?
 volatile uint32_t highTime[8];
 volatile uint32_t lowTime[8];
-volatile uint32_t samplePeriod = 100;
+volatile uint32_t samplePeriod = 100; 
 
-#define RMT_RESOLUTION_HZ 10000000 // 80MHz for high precision (12.5ns per tick)
-#define IDLE_THRES_NS     2000000  // 2ms idle threshold (fits @ 10MHz)
-#define BUFFER_SIZE 48
-#define RMT_TICK_DIAMETRE 100
+// PHIL - switch globals to camel case
+volatile uint32_t period_ticks = 0; 
+volatile uint32_t rise_tick = 0;
+volatile uint32_t old_rise_tick = 0;
+volatile uint32_t pulse_width_ticks = 0;
+volatile int edge_count = 0;
+
+// Semaphore used to signal when one full cycle has been measured (2 rising edges are reached)
+SemaphoreHandle_t cycle_semaphore = NULL;
+
+
 
 void PWMTask(void *pvParameters);
 
-// 1. GLOBAL & ALIGNED: Use static to ensure the memory address never moves
-//static rmt_symbol_word_t syms[48]; 
-//static rmt_receive_config_t rx_cfg;
-// 1. Force 4-byte alignment for the buffer and config
-// 'static' keeps them in a fixed location; 'aligned(4)' prevents the LoadProhibited crash
-static DMA_ATTR rmt_symbol_word_t syms[BUFFER_SIZE] __attribute__((aligned(4))); 
-static rmt_receive_config_t rx_cfg __attribute__((aligned(4)));
+// Callback for Channel A: Rising Edge
+static bool IRAM_ATTR on_rise_capture(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data) {
+    rise_tick = edata->cap_value;
+    period_ticks = rise_tick - old_rise_tick;
+    old_rise_tick = rise_tick;
 
-//rmt_channel_handle_t rx_chan[8]; 
-rmt_channel_handle_t rx_chan; 
-SemaphoreHandle_t rx_done_sem = NULL;
-//size_t last_captured_count = 0;  // REname pulse_count - PHIL
-volatile size_t captured_symbols = 0;
+    BaseType_t high_task_wakeup = pdFALSE;
+    edge_count++;
+    if (edge_count == 2) {
+        //edge_count = 0;
+        // Signal the main task
+        xSemaphoreGiveFromISR(cycle_semaphore, &high_task_wakeup);
+    }
+    return high_task_wakeup == pdTRUE;
+}
 
+// Callback for Channel B: Falling Edge
+static bool IRAM_ATTR on_fall_capture(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data) {
+    // MCPWM_UNIT_0 and MCPWM_SELECT_CAP0 depending on your setup.
+    uint32_t t_rise = mcpwm_ll_capture_get_value(&MCPWM0, 0);  // The t_rise from the other callback can be set too late for very narrow pulses
+    uint32_t t_fall = edata->cap_value;
+    uint32_t width = t_fall - t_rise;
+    // Check if rise time came after fall and if so use the rise time from the other callback
+    if (width > 0x7FFFFFFF) {
+        // Use the t_rise from the rise time callback
+        pulse_width_ticks = t_fall - rise_tick;
+    }
+    else {
+        pulse_width_ticks =  width;
+    }
+    return false;
+}
+
+// Global handles
+mcpwm_cap_timer_handle_t cap_timer = NULL;
+mcpwm_cap_channel_handle_t rise_chan = NULL;
+mcpwm_cap_channel_handle_t fall_chan = NULL;
 
 void PWMSetup() {
     Serial.println("In PWMSetup");
 
-    // Start Receive with Partial RX Enabled
-    memset(&rx_cfg, 0, sizeof(rx_cfg)); // Zero out the struct
-    //rx_cfg.signal_range_min_ns = 900;
-    rx_cfg.signal_range_max_ns = 2000000;
-    rx_cfg.signal_range_min_ns = 0; // is this necessary?
-    //rx_cfg.signal_range_max_ns = 0;
-    rx_cfg.flags.en_partial_rx = true;
+    // Configure Timer
+    mcpwm_capture_timer_config_t timer_conf = {};
+    timer_conf.group_id = 0;
+    timer_conf.clk_src = MCPWM_CAPTURE_CLK_SRC_DEFAULT;
+    mcpwm_new_capture_timer(&timer_conf, &cap_timer);
+
+    // Enable and Start
+    mcpwm_capture_timer_enable(cap_timer);
+    mcpwm_capture_timer_start(cap_timer);
+
+    cycle_semaphore = xSemaphoreCreateBinary();
 
     TaskHandle_t pwm_task;
-    xTaskCreate(PWMTask, "PWMTask",4096,NULL,0, &pwm_task); // PHIL - enlarge stack for printf?  Try going back to 2048
+    xTaskCreate(PWMTask, "PWMTask", 4096, NULL, 0, &pwm_task); // PHIL - enlarge stack for printf?  Try going back to 2048
 }
 
 
 void PWMTask(void *pvParameters) {
-    // Start one-shot capture
     Serial.println("PWMTask started");
 
-
-    while (1){
-        
-        for (int portId = 0; portId<7; portId++){
+    while (true) {
+        for (int portId = 0; portId<7; portId++) {
             Port* port = getGPIO(portId);  
             if (port == NULL){
-		Serial.printf("Port %d not initialized?\n", portId);
-	    }
+		        Serial.printf("Port %d not initialized?\n", portId);
+	        }
 
             if (port->mode != GPIOMode.PWM_IN) continue; 
 
-    	    // the hardware only supports up to 4 channels at a time so we switch channels
-	    // between each GPIO
-            rmt_rx_channel_config_t rx_chan_config = {
-                .gpio_num = (gpio_num_t)GPIO[port->id],
-                .clk_src = RMT_CLK_SRC_DEFAULT,
-                .resolution_hz = RMT_RESOLUTION_HZ,
-                .mem_block_symbols = 48,
-            };
-            esp_err_t err = rmt_new_rx_channel(&rx_chan_config, &rx_chan);  
-            if (err != ESP_OK || rx_chan == NULL) {
-                Serial.printf("Failed to create RMT channel: %s\n", esp_err_to_name(err));
-                continue; // Don't try to use a null channel!
-            }
+    	    // Configure Rising Channel for this port
+            mcpwm_capture_channel_config_t rise_conf = {};
+            rise_conf.gpio_num = GPIO[portId];
+            rise_conf.prescale = 1;
+            rise_conf.flags.pos_edge = true; // Use 1 for true in some versions
+            mcpwm_new_capture_channel(cap_timer, &rise_conf, &rise_chan);
 
-            ESP_ERROR_CHECK(rmt_enable(rx_chan));
-            delay(10); // PHIL - remove?
+            // Configure Falling Channel
+            mcpwm_capture_channel_config_t fall_conf = {};
+            fall_conf.gpio_num = GPIO[portId];
+            fall_conf.prescale = 1;
+            fall_conf.flags.neg_edge = true;
+            mcpwm_new_capture_channel(cap_timer, &fall_conf, &fall_chan);
+
+            // Re-Register Callbacks (using named variables to avoid rvalue error)
+            mcpwm_capture_event_callbacks_t rise_cbs = {};
+            rise_cbs.on_cap = on_rise_capture;
+            mcpwm_capture_channel_register_event_callbacks(rise_chan, &rise_cbs, NULL);
+
+            mcpwm_capture_event_callbacks_t fall_cbs = {};
+            fall_cbs.on_cap = on_fall_capture;
+            mcpwm_capture_channel_register_event_callbacks(fall_chan, &fall_cbs, NULL);
+        
+            // Enable channels
+            mcpwm_capture_channel_enable(rise_chan);
+            mcpwm_capture_channel_enable(fall_chan);
+
+            // Wait for at least one full period - with timeout
+            // Convert timeout to system ticks
+            TickType_t timeout_ticks = pdMS_TO_TICKS(samplePeriod); 
+            edge_count = 0; // Wait for 2 edges
+            if (xSemaphoreTake(cycle_semaphore, timeout_ticks) == pdTRUE) {
+                //Serial.println("Success: 2 edges detected ..");
+                highTime[portId] = (pulse_width_ticks * 1000) / 80;
+                period[portId] = (period_ticks * 1000) / 80;
+                lowTime[portId] = ((period_ticks - pulse_width_ticks) * 1000) / 80;
+                //if (portId == 2) Serial.printf("port %d, high time %d, period %d, low time %d \n", port->id, 
+                //                highTime[portId], period[portId], lowTime[portId]);
+            }    
+            else {
+                // No pulse received so send -1
+                highTime[portId] = 0xFFFFFFFF;
+                period[portId] = 0xFFFFFFFF;
+                lowTime[portId] = 0xFFFFFFFF;
+            }   
                 
-            Serial.println("calling receive");
-            esp_err_t ret = rmt_receive(rx_chan, syms, BUFFER_SIZE, &rx_cfg); // pass num symbols
-            if (ret == ESP_OK) {
-                delay(2); //PHIL - use a shorter delay?
-                    
-                // Stop the hardware immediately
-                rmt_disable(rx_chan);
-                //rmt_del_channel(rx_chan);
+            // Disable and delete channels
+            mcpwm_capture_channel_disable(rise_chan);
+            mcpwm_capture_channel_disable(fall_chan);
+            mcpwm_del_capture_channel(rise_chan);
+            mcpwm_del_capture_channel(fall_chan);
+	    } // for
 
-                // The driver will NOT trigger the callback when disabled.
-                // You must manually check the memory now.
-                // Note: Without the callback, you don't know exactly how many 'captured_symbols'.
-                // You will have to scan the buffer for the 'end' marker 
-                for (int i = 0; i < BUFFER_SIZE; i++) {
-                    if (syms[i].duration0 == 0 && syms[i].duration1 == 0) {
-			//Serial.println("End of captured data");
-                        break; // Found the end of captured data
-                    }
-		//Serial.println("process data");
-                    // Process your data here
-                    uint32_t ticks = (syms[0].level0 == 1) ? syms[0].duration0 : syms[0].duration1;
-                    float width_us = (float)ticks / 10.0;
-                    //Serial.printf("Manual Read Sym: %.2f us\n", width_us);
-                    
-                    // If fallTime;
-                    if (syms[0].level0 == 1) {
-                        highTime[port->id] = syms[0].duration0*RMT_TICK_DIAMETRE; // *100 to convert to nsec - switch to #define PHIL
-                        lowTime[port->id] = syms[0].duration1*RMT_TICK_DIAMETRE;
-                    } else {
-                        highTime[port->id] = syms[0].duration1*RMT_TICK_DIAMETRE;
-                        lowTime[port->id] = syms[0].duration0*RMT_TICK_DIAMETRE;
-                    }
-                    period[port->id] = (syms[0].duration0 + syms[0].duration1)*RMT_TICK_DIAMETRE;
-		    //Serial.printf("high time %d\n", highTime[port->id]);
-                } 
-                
-            } else {
-                Serial.printf("rmt_receive error: %s\n", esp_err_to_name(ret));
-            }
-	    // Do this after reading out the data
-	    rmt_del_channel(rx_chan);
-
-	} // for
+        // phil - delay only long enough to complete sample period
         delay(samplePeriod); 
     } // while
 }
