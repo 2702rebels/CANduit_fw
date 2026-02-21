@@ -110,7 +110,7 @@ void send_data_frame(long unsigned int identifier, int DLC, PackedBuffer* pbuf){
 PackedBuffer::PackedBuffer(){buf = 0; cur=0;}
 
 
-void PackedBuffer::putBits(int bits, uint64_t data){
+void PackedBuffer::putBits(int bits, unsigned long long data){
     // Mask the data to the bits
     data &= ((1UL << bits)-1);
     // Add the data to the location of the cursor
@@ -127,8 +127,8 @@ void PackedBuffer::putBool(bool val){
 void PackedBuffer::putByte(uint8_t byte){ putBits(8,byte); };
 void PackedBuffer::putWord(uint32_t word){ putBits(32,word); };
 
-uint64_t PackedBuffer::consumeBits(int bitlength){
-    uint64_t consumed = (buf & ((1UL << bitlength)-1));
+unsigned long long PackedBuffer::consumeBits(int bitlength){
+    unsigned long long consumed = (buf & ((1ULL << bitlength)-1));
     buf >>= bitlength;
     // adjust cursor
     cur -= bitlength;
@@ -141,7 +141,7 @@ bool PackedBuffer::consumeBool(){ return consumeBits(1); };
 uint8_t PackedBuffer::consumeByte(){ return consumeBits(8); };
 uint32_t PackedBuffer::consumeWord(){ return consumeBits(32); }
 
-PackedBuffer PackedBuffer::wrap(uint8_t (*data)[8]){
+PackedBuffer PackedBuffer::wrap(uint8_t (*data)[DATA_BYTES_COUNT]){
     PackedBuffer pbuf = PackedBuffer();
 
     for (uint8_t byte : (*data)){
@@ -151,9 +151,9 @@ PackedBuffer PackedBuffer::wrap(uint8_t (*data)[8]){
     return pbuf;
 };
 
-PackedBuffer PackedBuffer::wrap(uint64_t data, int bitlength){
+PackedBuffer PackedBuffer::wrap(unsigned long long data, int bitlength){
     PackedBuffer pbuf = PackedBuffer();
-    
+
     pbuf.putBits(bitlength,data);
     return pbuf;
 }

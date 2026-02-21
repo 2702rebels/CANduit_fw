@@ -35,27 +35,29 @@ constexpr struct [[gnu::packed]] {
 
 extern uint32_t broadcastPeriod;
 
+#define DATA_BYTES_COUNT 8
+
 /** Custom implementation of the ByteBuffer class from java for managing bits
  */
 class PackedBuffer{    
     
     public:
-        static PackedBuffer wrap(uint8_t (*data)[8]);
+        static PackedBuffer wrap(uint8_t (*data)[DATA_BYTES_COUNT]);
         static PackedBuffer wrap(uint64_t data, int bitlength);
         PackedBuffer();
 
-        void putBits(int bits, uint64_t data);
+        void putBits(int bits, unsigned long long data);
         void putBool(bool val);
         void putByte(uint8_t byte);
         void putWord(uint32_t word);
 
-        uint64_t consumeBits(int bits);
+        unsigned long long consumeBits(int bits);
         bool consumeBool();
         uint8_t consumeByte();
         uint32_t consumeWord();        
     private:
         //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a int64_t. Anything above should never be needed.
-        uint64_t buf; 
+        unsigned long long buf; 
 
         // Keeps track of the current index to add the lsb of a number to in the buffer
         int cur;
