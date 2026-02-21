@@ -7,7 +7,7 @@
 #include "driver/mcpwm_cap.h"
 #include "hal/mcpwm_ll.h"
 
-//#define NSEC_PER_TICK       (1000/80)  /* 80MHz clock*/
+//#define NSEC_PER_TICK       (1000/80)  /* 80MHz clock is 12.5nsec per tick but this rounds down to 12 !!*/
 
 volatile uint32_t period[8];   // Why are these volatile?
 volatile uint32_t highTime[8];
@@ -23,7 +23,6 @@ volatile int edge_count = 0;
 
 // Semaphore used to signal when one full cycle has been measured (2 rising edges are reached)
 SemaphoreHandle_t cycle_semaphore = NULL;
-
 
 
 void PWMTask(void *pvParameters);
@@ -90,6 +89,8 @@ void PWMTask(void *pvParameters) {
     Serial.println("PWMTask started");
 
     while (true) {
+        unsigned long start_time = millis();
+
         for (int portId = 0; portId<7; portId++) {
             Port* port = getGPIO(portId);  
             if (port == NULL){
@@ -131,7 +132,7 @@ void PWMTask(void *pvParameters) {
             edge_count = 0; // Wait for 2 edges
             if (xSemaphoreTake(cycle_semaphore, timeout_ticks) == pdTRUE) {
                 //Serial.println("Success: 2 edges detected ..");
-                highTime[portId] = (pulse_width_ticks * 1000) / 80;
+                highTime[portId] = (pulse_width_ticks * 1000) / 80; // Assumes 80MHz
                 period[portId] = (period_ticks * 1000) / 80;
                 lowTime[portId] = ((period_ticks - pulse_width_ticks) * 1000) / 80;
                 //if (portId == 2) Serial.printf("port %d, high time %d, period %d, low time %d \n", port->id, 
@@ -151,7 +152,11 @@ void PWMTask(void *pvParameters) {
             mcpwm_del_capture_channel(fall_chan);
 	    } // for
 
-        // phil - delay only long enough to complete sample period
-        delay(samplePeriod); 
+        // delay only long enough to complete sample period
+        if ((millis() - start_time) < samplePeriod)
+        {
+            delay(samplePeriod - (millis() - start_time));
+        }
+        //delay(samplePeriod); 
     } // while
 }
