@@ -176,6 +176,7 @@ void send_data_frame(long unsigned int identifier, int DLC, std::array<uint8_t,8
     tx_msg.identifier = identifier;      // Match the requested ID
     tx_msg.extd = 1;            // 0 for Standard, 1 for Extended (FRC is extended?)
     tx_msg.rtr = 0;             // MUST be 0 to send actual data
+    //tx_msg.self_reception = 0; // Disable self-echo - not needed?  PHIL
     tx_msg.data_length_code = DLC; // Number of bytes to send - should match the request
     for (int i = 0; i<DLC;i++) {
         tx_msg.data[i] = data[i];
