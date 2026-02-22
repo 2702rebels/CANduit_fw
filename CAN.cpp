@@ -149,13 +149,13 @@ void PackedBuffer::unloadToBytes(uint8_t (*data)[DATA_BYTES_COUNT], int DLC){
 }
 
 
-
+void PackedBuffer::setCur(int newCur){cur+=newCur;};
 
 PackedBuffer PackedBuffer::wrap(uint8_t (*data)[DATA_BYTES_COUNT]){
     PackedBuffer pbuf = PackedBuffer();
     
     memcpy(&pbuf.buf,data,sizeof(*data));
-
+    pbuf.setCur(8*sizeof(*data));
     return pbuf;
 };
 

@@ -44,7 +44,7 @@ class PackedBuffer{
     
     public:
         static PackedBuffer wrap(uint8_t (*data)[DATA_BYTES_COUNT]);
-        static PackedBuffer wrap(uint64_t data, int bitlength);
+        static PackedBuffer wrap(unsigned long long data, int bitlength);
         PackedBuffer();
 
         void putBits(int bits, unsigned long long data);
@@ -57,6 +57,7 @@ class PackedBuffer{
         uint8_t consumeByte();
         uint32_t consumeWord();
         void unloadToBytes(uint8_t (*data)[DATA_BYTES_COUNT], int DLC);
+        void setCur(int newCur);
     private:
         //We only need a bitset of 64 for this implementation, so it can stay more efficiently as a int64_t. Anything above should never be needed.
         unsigned long long buf; 
